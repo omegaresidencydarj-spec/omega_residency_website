@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Omega Residency | Contact</title>
+  <meta name="description" content="Contact Omega Residency Darjeeling by phone, email, or WhatsApp." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="contact">
+  <header class="topbar">
+    <div class="container nav">
+      <a class="brand" href="OmegaResidencyIndex.html">
+        <div class="brand-mark"><img src="OMEGA_LOGO-removebg.png" alt="Omega Residency logo" /></div>
+        <div class="brand-copy"><strong>Omega Residency</strong><span>Boutique Hotel · Darjeeling</span></div>
+      </a>
+      <nav class="nav-links" id="navLinks">
+        <a href="OmegaResidencyIndex.html" data-page="home">Home</a>
+        <a href="about.html" data-page="about">About</a>
+        <a href="rooms.html" data-page="rooms">Our Rooms</a>
+        <a href="gallery.html" data-page="gallery">Gallery</a>
+        <a href="contact.html" data-page="contact">Contact</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="ghost-btn" href="tel:+918509307438">Call Now</a>
+        <a class="btn" href="rooms.html#booking">Book Your Stay</a>
+        <button class="mobile-menu-btn" id="menuBtn" aria-label="Toggle menu" aria-expanded="false">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="container contact-layout">
+      <article class="contact-card panel">
+        <span class="eyebrow">Contact</span>
+        <h1>Talk to the hotel directly</h1>
+        <p class="lead"><strong>Phone:</strong> <a href="tel:+918509307438">+91 85093 07438</a></p>
+        <p class="lead"><strong>Landline:</strong> <a href="tel:+913542254990">0354 2254990</a></p>
+        <p class="lead"><strong>Email:</strong> <a href="mailto:omegaresidencydarj@gmail.com">omegaresidencydarj@gmail.com</a></p>
+        <p class="lead"><strong>WhatsApp:</strong> <a href="https://wa.me/918509307438" target="_blank" rel="noreferrer">Message now</a></p>
+        <p class="lead"><strong>Address:</strong> HD Lama Road, near Mall Road, Chauk Bazaar, Darjeeling, West Bengal 734101</p>
+        <p class="lead"><strong>Map:</strong> Quick directions from Mall Road and Chauk Bazaar.</p>
+        <a class="btn-secondary map-link-btn" href="https://maps.app.goo.gl/RhUEHP98UHs7YsF6A" target="_blank" rel="noreferrer">Open Google Maps</a>
+      </article>
+      <article class="form-card">
+        <form id="bookingForm">
+          <label for="name">Full Name</label>
+          <input id="name" name="name" type="text" required />
+
+          <label for="phone">Phone or WhatsApp</label>
+          <input id="phone" name="phone" type="text" required />
+
+          <label for="room">Room Type</label>
+          <select id="room" name="room">
+            <option value="Maple Deluxe (E/P Plan)">Maple Deluxe (E/P Plan)</option>
+            <option value="Olive Suite (E/P Plan)">Olive Suite (E/P Plan)</option>
+            <option value="Pine Suite (E/P Plan)">Pine Suite (E/P Plan)</option>
+          </select>
+
+          <label for="message">Message</label>
+          <textarea id="message" name="message" placeholder="Check-in date, check-out date, guests, requests"></textarea>
+
+          <button class="btn" type="submit">Send on WhatsApp</button>
+        </form>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer"><div class="container footer-row"><span>© <span class="year"></span> Omega Residency</span><span>We usually respond quickly on WhatsApp.</span></div></footer>
+
+  <script src="script.js"></script>
+  <script>
+    (function () {
+      var form = document.getElementById('bookingForm');
+      if (!form) return;
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var data = new FormData(form);
+        var text = encodeURIComponent(
+          'Hello Omega Residency, I want to inquire about a booking.\n' +
+          'Name: ' + (data.get('name') || '') + '\n' +
+          'Phone: ' + (data.get('phone') || '') + '\n' +
+          'Room: ' + (data.get('room') || '') + '\n' +
+          'Message: ' + (data.get('message') || '')
+        );
+        window.open('https://wa.me/918509307438?text=' + text, '_blank', 'noopener');
+      });
+    })();
+  </script>
+</body>
+</html>

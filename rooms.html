@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Omega Residency | Our Rooms & Booking</title>
+  <meta name="description" content="Our rooms, seasonal rates, and direct Stripe booking for Omega Residency." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="rooms">
+  <header class="topbar">
+    <div class="container nav">
+      <a class="brand" href="OmegaResidencyIndex.html">
+        <div class="brand-mark"><img src="OMEGA_LOGO-removebg.png" alt="Omega Residency logo" /></div>
+        <div class="brand-copy"><strong>Omega Residency</strong><span>Boutique Hotel · Darjeeling</span></div>
+      </a>
+      <nav class="nav-links" id="navLinks">
+        <a href="OmegaResidencyIndex.html" data-page="home">Home</a>
+        <a href="about.html" data-page="about">About</a>
+        <a href="rooms.html" data-page="rooms">Our Rooms</a>
+        <a href="gallery.html" data-page="gallery">Gallery</a>
+        <a href="contact.html" data-page="contact">Contact</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="ghost-btn" href="tel:+918509307438">Call Now</a>
+        <a class="btn" href="#booking">Book Your Stay</a>
+        <button class="mobile-menu-btn" id="menuBtn" aria-label="Toggle menu" aria-expanded="false">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="container">
+      <div class="section-head">
+        <span class="eyebrow">Our Rooms</span>
+        <h1>Our rooms</h1>
+        <p class="lead">Our display tariffs follow the season and your selected dates, so every stay shows the right room price before booking.</p>
+      </div>
+
+      <div class="rooms-wrap">
+        <article class="room-card">
+          <img src="Maple Deluxe.jpg" alt="Maple Deluxe Room" loading="lazy" decoding="async" width="196" height="118" />
+          <div class="room-meta">
+            <h2 style="font-size:2rem;">Maple Deluxe (E/P Plan)</h2>
+            <p class="lead">Well furnished room with wide space and charming view.</p>
+            <ul>
+              <li>Size: 156 sq ft</li>
+              <li>Beds: 1 Double / 1 Queen</li>
+            </ul>
+          </div>
+          <div class="room-price">
+            <span>From</span>
+            <strong>₹7,000</strong>
+            <a class="btn room-book-btn book-room-btn" href="#booking" data-room="maple">Book Now</a>
+          </div>
+        </article>
+
+        <article class="room-card">
+          <img src="Olive Suite/786aea73-6a56-4f2c-b93d-eaa7e92a3fb9.jpg" alt="Olive Suite bed view" loading="lazy" decoding="async" width="1280" height="960" />
+          <div class="room-meta">
+            <h2 style="font-size:2rem;">Olive Suite (E/P Plan)</h2>
+            <p class="lead">Suite room on upper floor with valley and town view.</p>
+            <ul>
+              <li>Size: 300 sq ft</li>
+              <li>Beds: 2 Single / 1 King</li>
+            </ul>
+          </div>
+          <div class="room-price">
+            <span>From</span>
+            <strong>₹10,000</strong>
+            <a class="btn room-book-btn book-room-btn" href="#booking" data-room="olive">Book Now</a>
+          </div>
+        </article>
+
+        <article class="room-card">
+          <img src="Pine_Suite.jpg" alt="Pine Suite" loading="lazy" decoding="async" width="3224" height="1822" />
+          <div class="room-meta">
+            <h2 style="font-size:2rem;">Pine Suite (E/P Plan)</h2>
+            <p class="lead">Spacious suite layout with premium wooden interiors.</p>
+            <ul>
+              <li>Beds: 2 Single / 1 Super-King</li>
+              <li>Charges: Same as Olive Suite</li>
+            </ul>
+          </div>
+          <div class="room-price">
+            <span>From</span>
+            <strong>₹10,000</strong>
+            <a class="btn room-book-btn book-room-btn" href="#booking" data-room="pine">Book Now</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="booking">
+      <div class="container booking-shell">
+        <article class="panel booking-main">
+          <span class="eyebrow">Booking</span>
+          <h2>Plan your stay</h2>
+          <div class="booking-steps" id="bookingSteps">
+            <button type="button" class="step-pill active" data-step="1">1. Select room</button>
+            <button type="button" class="step-pill locked" data-step="2">2. Personal details</button>
+            <button type="button" class="step-pill locked" data-step="3">3. Payment confirmation</button>
+          </div>
+          <p class="booking-hint" id="bookingHint" aria-live="polite"></p>
+
+          <form id="stayPlanner" novalidate>
+            <section class="booking-stage active" data-stage="1">
+              <div class="booking-form-grid">
+                <div class="full">
+                  <label for="roomType">Room Type</label>
+                  <select id="roomType" name="roomType">
+                    <option value="maple">Maple Deluxe (E/P Plan)</option>
+                    <option value="olive">Olive Suite (E/P Plan)</option>
+                    <option value="pine">Pine Suite (E/P Plan)</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="checkinDisplay">Check-in</label>
+                  <button type="button" class="calendar-trigger" id="checkinDisplay" aria-haspopup="dialog" aria-expanded="false" aria-controls="calendarModal">
+                    <span class="calendar-trigger-label">Select check-in date</span>
+                    <span class="calendar-trigger-icon" aria-hidden="true">📅</span>
+                  </button>
+                  <input id="checkinDate" name="checkinDate" type="hidden" required />
+                </div>
+                <div>
+                  <label for="checkoutDisplay">Check-out</label>
+                  <button type="button" class="calendar-trigger" id="checkoutDisplay" aria-haspopup="dialog" aria-expanded="false" aria-controls="calendarModal">
+                    <span class="calendar-trigger-label">Select check-out date</span>
+                    <span class="calendar-trigger-icon" aria-hidden="true">📅</span>
+                  </button>
+                  <input id="checkoutDate" name="checkoutDate" type="hidden" required />
+                </div>
+                <div>
+                  <label for="guestsCount">Guests</label>
+                  <input id="guestsCount" name="guestsCount" type="number" min="1" value="2" />
+                </div>
+              </div>
+
+              <h3 style="margin:1rem 0 0.5rem;">Optional add-ons</h3>
+              <div class="addon-list">
+                <div class="addon-item"><label><input type="checkbox" class="addon-check" data-addon="extra_bed" /> Extra Bed (₹1,000)</label><input type="number" class="addon-qty" data-addon="extra_bed" min="0" value="0" disabled /></div>
+                <div class="addon-item"><label><input type="checkbox" class="addon-check" data-addon="heater" /> Heater (₹500)</label><input type="number" class="addon-qty" data-addon="heater" min="0" value="0" disabled /></div>
+                <div class="addon-item"><label><input type="checkbox" class="addon-check" data-addon="hot_bag" /> Electric Hot Water Bag (₹100)</label><input type="number" class="addon-qty" data-addon="hot_bag" min="0" value="0" disabled /></div>
+                <div class="addon-item"><label><input type="checkbox" class="addon-check" data-addon="bed_blanket" /> Electric Bed Blanket (₹300)</label><input type="number" class="addon-qty" data-addon="bed_blanket" min="0" value="0" disabled /></div>
+                <div class="addon-item"><label><input type="checkbox" class="addon-check" data-addon="combo" /> Heating Combo (₹700)</label><input type="number" class="addon-qty" data-addon="combo" min="0" value="0" disabled /></div>
+                <div class="addon-item"><label><input type="checkbox" class="addon-check" data-addon="meals" /> Meals (₹600 per guest/day)</label><input type="number" class="addon-qty" data-addon="meals" min="0" value="0" disabled /></div>
+              </div>
+
+              <div class="stage-actions">
+                <button type="button" class="btn" id="toStep2">Continue to Personal Details</button>
+              </div>
+            </section>
+
+            <section class="booking-stage" data-stage="2">
+              <div class="booking-form-grid">
+                <div>
+                  <label for="titleSelect">Title</label>
+                  <select id="titleSelect" name="titleSelect">
+                    <option value="Mr">Mr</option>
+                    <option value="Ms">Ms</option>
+                    <option value="Mrs">Mrs</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="firstName">First Name</label>
+                  <input id="firstName" name="firstName" type="text" placeholder="First name" required />
+                </div>
+                <div>
+                  <label for="lastName">Last Name</label>
+                  <input id="lastName" name="lastName" type="text" placeholder="Last name" required />
+                </div>
+                <div>
+                  <label for="guestPhone">Mobile Number</label>
+                  <input id="guestPhone" name="guestPhone" type="tel" placeholder="+91" required />
+                </div>
+                <div class="full">
+                  <label for="guestEmail">Email</label>
+                  <input id="guestEmail" name="guestEmail" type="email" placeholder="you@example.com" required />
+                </div>
+                <div class="full">
+                  <label for="specialRequest">Special Requests</label>
+                  <textarea id="specialRequest" name="specialRequest" placeholder="Pickup, room preference, early check-in, etc."></textarea>
+                </div>
+              </div>
+              <div class="stage-actions">
+                <button type="button" class="btn-secondary" id="backToStep1">Back</button>
+                <button type="button" class="btn" id="toStep3">Review & Confirm</button>
+              </div>
+            </section>
+
+            <section class="booking-stage" data-stage="3">
+              <div class="confirm-box">
+                <h3 style="margin-bottom:0.65rem;">Review your booking</h3>
+                <div class="summary-row"><span class="summary-muted">Guest</span><span id="confirmGuest">-</span></div>
+                <div class="summary-row"><span class="summary-muted">Room</span><span id="confirmRoom">-</span></div>
+                <div class="summary-row"><span class="summary-muted">Stay</span><span id="confirmDates">-</span></div>
+                <div class="summary-row"><span class="summary-muted">Guests</span><span id="confirmGuests">-</span></div>
+                <div class="summary-row"><span class="summary-muted">Add-ons</span><span id="confirmAddons">₹0</span></div>
+                <div class="summary-row summary-total"><strong>Total</strong><strong id="confirmTotal">₹0</strong></div>
+              </div>
+              <div class="stage-actions">
+                <button type="button" class="btn-secondary" id="backToStep2">Back</button>
+                <a class="btn" id="stripePayBtn" href="https://buy.stripe.com/your-payment-link" target="_blank" rel="noreferrer">Proceed to Stripe</a>
+                <a class="btn-secondary" id="whatsAppQuoteBtn" href="https://wa.me/918509307438" target="_blank" rel="noreferrer">Send Quote on WhatsApp</a>
+              </div>
+            </section>
+          </form>
+        </article>
+
+        <aside style="display:grid; gap:0.9rem; align-self:start;">
+          <div class="panel booking-side">
+            <div class="summary-head">
+              <h3 style="margin:0;">Your Stay</h3>
+            </div>
+            <div class="summary-body">
+              <div class="summary-row"><span class="summary-muted">Room</span><span id="sumRoom">Maple Deluxe</span></div>
+              <div class="summary-row"><span class="summary-muted">Nights</span><span id="sumNights">0</span></div>
+              <div class="summary-row"><span class="summary-muted">Base Rate</span><span id="sumBase">₹0</span></div>
+              <div class="summary-row"><span class="summary-muted">Add-ons</span><span id="sumAddons">₹0</span></div>
+              <div class="summary-row summary-total"><strong>Total</strong><strong id="sumTotal">₹0</strong></div>
+            </div>
+          </div>
+          <div class="panel">
+            <h3 style="font-size:1.35rem;">Cancellation Policy</h3>
+            <p class="lead" style="font-size:0.98rem;">Free cancellation up to 3 days before check-in. After that, 1-night charge may apply plus taxes.</p>
+          </div>
+        </aside>
+      </div>
+
+      <div class="calendar-modal" id="calendarModal" hidden>
+        <div class="calendar-backdrop" data-calendar-close></div>
+        <div class="calendar-panel" role="dialog" aria-modal="true" aria-labelledby="calendarMonthLabel">
+          <div class="calendar-head">
+            <button type="button" class="calendar-nav" id="calendarPrev" aria-label="Previous month">‹</button>
+            <h3 id="calendarMonthLabel">Month 2026</h3>
+            <button type="button" class="calendar-nav" id="calendarNext" aria-label="Next month">›</button>
+          </div>
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+          <p class="calendar-help" id="calendarHelp">Select your date</p>
+          <div class="calendar-actions">
+            <button type="button" class="btn-secondary" id="calendarCancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"><div class="container footer-row"><span>© <span class="year"></span> Omega Residency</span><span>For latest availability call +91 85093 07438</span></div></footer>
+  <script src="script.js"></script>
+</body>
+</html>

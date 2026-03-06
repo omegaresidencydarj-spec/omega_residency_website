@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Omega Residency Darjeeling | Boutique Hotel</title>
+  <meta
+    name="description"
+    content="Boutique hotel near Mall Road, Darjeeling. Warm hospitality, elegant rooms, and a comfortable stay in the heart of the city."
+  />
+  <meta name="theme-color" content="#8b5e3c" />
+  <style>
+    :root {
+      --bg: #f7f1ea;
+      --bg-soft: #efe4d6;
+      --surface: #fffaf5;
+      --surface-2: #f3e7d9;
+      --text: #2d221b;
+      --muted: #6e5a4d;
+      --accent: #8b5e3c;
+      --accent-dark: #70492d;
+      --accent-light: #d6a17a;
+      --line: rgba(45, 34, 27, 0.12);
+      --shadow: 0 18px 40px rgba(61, 38, 20, 0.12);
+      --radius: 24px;
+      --radius-sm: 16px;
+      --max-width: 1180px;
+      --header-height: 78px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(214, 161, 122, 0.16), transparent 22%),
+        linear-gradient(180deg, #fbf6f0 0%, var(--bg) 100%);
+      line-height: 1.55;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+
+    .container {
+      width: min(var(--max-width), calc(100% - 2rem));
+      margin: 0 auto;
+    }
+
+    .section {
+      padding: 5.5rem 0;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+    }
+
+    h1, h2, h3, h4, p { margin: 0; }
+    h1 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2.7rem, 5vw, 5.3rem);
+      line-height: 0.98;
+      letter-spacing: -0.03em;
+    }
+
+    h2 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2rem, 3vw, 3rem);
+      line-height: 1.06;
+    }
+
+    h3 {
+      font-size: 1.15rem;
+      line-height: 1.2;
+    }
+
+    p.lead {
+      font-size: 1.08rem;
+      color: var(--muted);
+      max-width: 60ch;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(14px);
+      background: rgba(250, 245, 238, 0.85);
+      border-bottom: 1px solid rgba(45, 34, 27, 0.08);
+    }
+
+    .nav {
+      min-height: var(--header-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #fff7ef, #ead4bf);
+      border: 1px solid rgba(139, 94, 60, 0.15);
+      box-shadow: var(--shadow);
+      font-family: Georgia, serif;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .brand-copy {
+      min-width: 0;
+    }
+
+    .brand-copy strong {
+      display: block;
+      font-size: 1rem;
+    }
+
+    .brand-copy span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.86rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.15rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.95rem;
+      position: relative;
+    }
+
+    .nav-links a:hover,
+    .nav-links a:focus-visible {
+      color: var(--text);
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .btn,
+    .btn-secondary,
+    .ghost-btn {
+      border: none;
+      cursor: pointer;
+      border-radius: 999px;
+      transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: #fff;
+      padding: 0.9rem 1.3rem;
+      font-weight: 700;
+      box-shadow: 0 12px 24px rgba(112, 73, 45, 0.24);
+    }
+
+    .btn:hover,
+    .btn:focus-visible,
+    .btn-secondary:hover,
+    .btn-secondary:focus-visible,
+    .ghost-btn:hover,
+    .ghost-btn:focus-visible {
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(139, 94, 60, 0.08);
+      color: var(--accent-dark);
+      padding: 0.9rem 1.2rem;
+      font-weight: 700;
+    }
+
+    .ghost-btn {
+      background: transparent;
+      border: 1px solid rgba(45, 34, 27, 0.12);
+      padding: 0.8rem 1.05rem;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 1px solid rgba(45, 34, 27, 0.12);
+      background: rgba(255,255,255,0.65);
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .mobile-menu-btn span,
+    .mobile-menu-btn span::before,
+    .mobile-menu-btn span::after {
+      display: block;
+      position: relative;
+      width: 18px;
+      height: 2px;
+      background: var(--text);
+      border-radius: 999px;
+      content: "";
+    }
+
+    .mobile-menu-btn span::before { top: -6px; position: absolute; }
+    .mobile-menu-btn span::after { top: 6px; position: absolute; }
+
+    .hero {
+      padding: 2.2rem 0 4rem;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 1.5rem;
+      align-items: stretch;
+    }
+
+    .hero-main,
+    .hero-side {
+      min-height: 620px;
+      border-radius: 32px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow);
+      background-size: cover;
+      background-position: center;
+    }
+
+    .hero-main::after,
+    .hero-side::after,
+    .room-card__image::after,
+    .gallery-card::after,
+    .feature-card__image::after,
+    .location-card__image::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(32, 20, 12, 0.14), rgba(32, 20, 12, 0.68));
+      pointer-events: none;
+    }
+
+    .hero-main {
+      background-image: url("images/hero-darjeeling.jpg");
+    }
+
+    .hero-side {
+      background-image: url("images/lobby-reception.jpg");
+    }
+
+    .hero-card {
+      position: absolute;
+      inset: auto 1.25rem 1.25rem 1.25rem;
+      z-index: 1;
+      border-radius: 28px;
+      background: rgba(255, 249, 242, 0.88);
+      backdrop-filter: blur(10px);
+      padding: 1.4rem;
+      border: 1px solid rgba(255,255,255,0.3);
+      box-shadow: 0 18px 40px rgba(32, 20, 12, 0.16);
+    }
+
+    .hero-card p {
+      color: var(--muted);
+      margin-top: 0.9rem;
+      margin-bottom: 1.25rem;
+      max-width: 58ch;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+    }
+
+    .hero-badges {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.9rem;
+      margin-top: 1.1rem;
+    }
+
+    .badge {
+      background: rgba(255,255,255,0.72);
+      border-radius: 18px;
+      padding: 0.9rem;
+      border: 1px solid rgba(45, 34, 27, 0.08);
+    }
+
+    .badge strong {
+      display: block;
+      font-size: 1rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .badge span {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .intro-grid,
+    .rooms-grid,
+    .experience-grid,
+    .contact-grid,
+    .payment-grid,
+    .footer-grid {
+      display: grid;
+      gap: 1.4rem;
+    }
+
+    .intro-grid {
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .feature-card {
+      overflow: hidden;
+    }
+
+    .feature-card__image {
+      min-height: 340px;
+      background-image: url("images/lobby-lounge.jpg");
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+
+    .feature-card__body {
+      padding: 1.5rem;
+    }
+
+    .feature-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.85rem;
+      margin-top: 1.3rem;
+    }
+
+    .feature-pill {
+      padding: 0.9rem 1rem;
+      border-radius: 18px;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid rgba(45, 34, 27, 0.06);
+      font-weight: 600;
+    }
+
+    .rooms-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .room-card {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .room-card__image {
+      min-height: 260px;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+
+    .room-card__content {
+      padding: 1.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      flex: 1;
+    }
+
+    .room-meta {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .room-meta span {
+      padding: 0.42rem 0.7rem;
+      border-radius: 999px;
+      background: rgba(139, 94, 60, 0.08);
+      color: var(--accent-dark);
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .room-card p {
+      color: var(--muted);
+    }
+
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-top: auto;
+      flex-wrap: wrap;
+    }
+
+    .price-note {
+      display: block;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 0.15rem;
+    }
+
+    .experience-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .experience-card {
+      padding: 1.35rem;
+      background: linear-gradient(180deg, #fffaf6, #f7ecdf);
+      border-radius: 22px;
+      border: 1px solid rgba(45, 34, 27, 0.08);
+      box-shadow: var(--shadow);
+    }
+
+    .experience-card p {
+      color: var(--muted);
+      margin-top: 0.55rem;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .gallery-card {
+      min-height: 230px;
+      border-radius: 22px;
+      overflow: hidden;
+      position: relative;
+      background-size: cover;
+      background-position: center;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(45, 34, 27, 0.08);
+    }
+
+    .gallery-card:nth-child(1) { grid-column: span 2; min-height: 310px; }
+    .gallery-card:nth-child(4) { grid-column: span 2; }
+
+    .gallery-label {
+      position: absolute;
+      left: 1rem;
+      right: 1rem;
+      bottom: 1rem;
+      z-index: 1;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .location-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.4rem;
+      align-items: stretch;
+    }
+
+    .location-card {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+
+    .location-card__image {
+      min-height: 340px;
+      border-radius: 22px;
+      background-image: url("images/exterior-night.jpg");
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .address-box,
+    .contact-box,
+    .payment-box {
+      padding: 1.15rem;
+      border-radius: 18px;
+      background: var(--surface-2);
+      border: 1px solid rgba(45, 34, 27, 0.06);
+    }
+
+    .address-box strong,
+    .contact-box strong,
+    .payment-box strong {
+      display: block;
+      margin-bottom: 0.45rem;
+    }
+
+    .address-box p,
+    .contact-box p,
+    .payment-box p,
+    .location-card p,
+    .payment-card p,
+    .footer-col p {
+      color: var(--muted);
+    }
+
+    .payment-grid {
+      grid-template-columns: 1.2fr 0.8fr;
+      align-items: start;
+    }
+
+    .payment-card {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .steps {
+      display: grid;
+      gap: 0.8rem;
+      margin-top: 0.3rem;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 0.9rem;
+      align-items: start;
+      padding: 0.9rem;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid rgba(45, 34, 27, 0.08);
+    }
+
+    .step-number {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: #fff;
+      font-weight: 800;
+    }
+
+    .contact-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .contact-card,
+    .form-card {
+      padding: 1.5rem;
+    }
+
+    .contact-list {
+      display: grid;
+      gap: 0.9rem;
+      margin-top: 1rem;
+    }
+
+    .contact-item {
+      padding: 1rem;
+      border-radius: 18px;
+      background: var(--surface-2);
+      border: 1px solid rgba(45, 34, 27, 0.06);
+    }
+
+    .contact-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-bottom: 0.2rem;
+    }
+
+    form {
+      display: grid;
+      gap: 0.95rem;
+    }
+
+    .field {
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    label {
+      font-weight: 700;
+      font-size: 0.93rem;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid rgba(45, 34, 27, 0.14);
+      padding: 0.9rem 1rem;
+      font: inherit;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: rgba(139, 94, 60, 0.5);
+      box-shadow: 0 0 0 4px rgba(139, 94, 60, 0.12);
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    .notice {
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    .footer {
+      padding: 2.25rem 0 3rem;
+      border-top: 1px solid rgba(45, 34, 27, 0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0), rgba(219, 190, 164, 0.16));
+    }
+
+    .footer-grid {
+      grid-template-columns: 1.1fr 0.9fr 0.8fr;
+      align-items: start;
+    }
+
+    .footer-col ul {
+      list-style: none;
+      padding: 0;
+      margin: 0.9rem 0 0;
+      display: grid;
+      gap: 0.55rem;
+      color: var(--muted);
+    }
+
+    .footer-bottom {
+      margin-top: 1.8rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(45, 34, 27, 0.08);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(18, 12, 8, 0.82);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 110;
+    }
+
+    .lightbox.open { display: flex; }
+
+    .lightbox img {
+      max-width: min(100%, 1100px);
+      max-height: 88vh;
+      border-radius: 24px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: none;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,0.18);
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1024px) {
+      .hero-grid,
+      .intro-grid,
+      .payment-grid,
+      .contact-grid,
+      .location-wrap,
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .rooms-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .experience-grid,
+      .gallery-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .gallery-card:nth-child(1),
+      .gallery-card:nth-child(4) {
+        grid-column: span 1;
+        min-height: 240px;
+      }
+
+      .hero-main,
+      .hero-side {
+        min-height: 500px;
+      }
+
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: calc(var(--header-height) - 4px);
+        left: 1rem;
+        right: 1rem;
+        background: rgba(250, 245, 238, 0.98);
+        padding: 1rem;
+        border-radius: 22px;
+        border: 1px solid rgba(45, 34, 27, 0.08);
+        box-shadow: var(--shadow);
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .nav-links.open { display: flex; }
+      .mobile-menu-btn { display: inline-flex; }
+      .nav-actions .btn { display: none; }
+    }
+
+    @media (max-width: 720px) {
+      :root { --header-height: 72px; }
+      .section { padding: 4.5rem 0; }
+      .rooms-grid,
+      .experience-grid,
+      .gallery-grid,
+      .feature-list,
+      .hero-badges {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-main,
+      .hero-side { min-height: 420px; }
+
+      .hero-card {
+        inset: auto 0.9rem 0.9rem 0.9rem;
+        padding: 1.1rem;
+      }
+
+      .nav {
+        gap: 0.75rem;
+      }
+
+      .brand-copy span {
+        white-space: normal;
+      }
+
+      .hero-actions,
+      .price-row,
+      .section-header {
+        align-items: stretch;
+      }
+
+      .btn,
+      .btn-secondary,
+      .ghost-btn {
+        width: 100%;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container nav">
+      <a class="brand" href="#home" aria-label="Omega Residency Darjeeling home">
+        <div class="brand-mark">OR</div>
+        <div class="brand-copy">
+          <strong>Omega Residency</strong>
+          <span>Boutique Hotel · Darjeeling</span>
+        </div>
+      </a>
+
+      <nav class="nav-links" id="navLinks">
+        <a href="#about">About</a>
+        <a href="#rooms">Rooms</a>
+        <a href="#gallery">Gallery</a>
+        <a href="#location">Location</a>
+        <a href="#booking">Book</a>
+        <a href="#contact">Contact</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a class="ghost-btn" href="tel:+918509307438">Call Now</a>
+        <a class="btn" href="#booking">Book Your Stay</a>
+        <button class="mobile-menu-btn" id="menuBtn" aria-label="Toggle menu" aria-expanded="false">
+          <span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="home">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-main reveal">
+          <div class="hero-card">
+            <span class="eyebrow">Namaste from Darjeeling</span>
+            <h1>A warm boutique stay near Mall Road.</h1>
+            <p>
+              Elegant wooden interiors, comfortable rooms, and a welcoming atmosphere in the heart of Darjeeling.
+              Omega Residency blends classic warmth with practical comfort for families, couples, and city explorers.
+            </p>
+            <div class="hero-actions">
+              <a class="btn" href="#booking">Reserve a Room</a>
+              <a class="btn-secondary" href="#gallery">View Gallery</a>
+            </div>
+            <div class="hero-badges">
+              <div class="badge">
+                <strong>Prime Location</strong>
+                <span>Near Mall Road & Chowk Bazaar</span>
+              </div>
+              <div class="badge">
+                <strong>Boutique Feel</strong>
+                <span>Warm interiors and cozy luxury</span>
+              </div>
+              <div class="badge">
+                <strong>Easy Booking</strong>
+                <span>Direct booking support via call, WhatsApp, or payment link</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-side reveal">
+          <div class="hero-card">
+            <span class="eyebrow">Stay with us</span>
+            <h2>A home in the heart of the city.</h2>
+            <p>
+              Designed around your current photos: warm cream walls, wood finishes, soft lighting, classic furniture,
+              and a calm boutique atmosphere that feels welcoming the moment guests arrive.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="about">
+      <div class="container intro-grid">
+        <div class="reveal">
+          <span class="eyebrow">About Omega Residency</span>
+          <h2>Classic comfort with a Darjeeling identity.</h2>
+          <p class="lead">
+            Based on the hotel's visual style, this site uses warm beige, walnut wood tones, soft gold accents, and a
+            boutique layout that feels elegant without being heavy. The goal is to present the hotel as clean, trustworthy,
+            cozy, and premium.
+          </p>
+          <div class="feature-list">
+            <div class="feature-pill">Near Mall Road</div>
+            <div class="feature-pill">Boutique ambience</div>
+            <div class="feature-pill">Family-friendly rooms</div>
+            <div class="feature-pill">Direct booking support</div>
+          </div>
+        </div>
+
+        <article class="card feature-card reveal">
+          <div class="feature-card__image" aria-hidden="true"></div>
+          <div class="feature-card__body">
+            <h3>Thoughtful interiors that already sell the experience.</h3>
+            <p class="lead" style="font-size:1rem; margin-top:0.7rem;">
+              The photos show your strongest selling points clearly: polished wooden floors, elegant beds, cozy lounge
+              spaces, decorative lighting, and a boutique frontage. The website should make those assets easy to trust at first glance.
+            </p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="rooms">
+      <div class="container">
+        <div class="section-header reveal">
+          <div>
+            <span class="eyebrow">Rooms & Stay</span>
+            <h2>Comfortable spaces for every kind of guest.</h2>
+          </div>
+          <p class="lead">Replace the sample pricing and room details below with your final tariff and room categories.</p>
+        </div>
+
+        <div class="rooms-grid">
+          <article class="card room-card reveal">
+            <div class="room-card__image" style="background-image:url('images/room-deluxe-1.jpg');"></div>
+            <div class="room-card__content">
+              <div>
+                <h3>Deluxe Room</h3>
+                <p>Warm interiors, premium bedding, and a calm city-stay experience for couples and solo travellers.</p>
+              </div>
+              <div class="room-meta">
+                <span>Queen Bed</span>
+                <span>2 Guests</span>
+                <span>Wi‑Fi</span>
+              </div>
+              <div class="price-row">
+                <div>
+                  <strong>From ₹4,500 / night</strong>
+                  <span class="price-note">Sample rate · update after tariff confirmation</span>
+                </div>
+                <a class="btn-secondary" href="#booking">Book</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="card room-card reveal">
+            <div class="room-card__image" style="background-image:url('images/room-deluxe-2.jpg');"></div>
+            <div class="room-card__content">
+              <div>
+                <h3>Executive Room</h3>
+                <p>Extra space with elegant wooden flooring and a boutique feel ideal for longer or more comfortable stays.</p>
+              </div>
+              <div class="room-meta">
+                <span>Large Room</span>
+                <span>2–3 Guests</span>
+                <span>Breakfast Optional</span>
+              </div>
+              <div class="price-row">
+                <div>
+                  <strong>From ₹5,800 / night</strong>
+                  <span class="price-note">Sample rate · update after tariff confirmation</span>
+                </div>
+                <a class="btn-secondary" href="#booking">Book</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="card room-card reveal">
+            <div class="room-card__image" style="background-image:url('images/room-suite.jpg');"></div>
+            <div class="room-card__content">
+              <div>
+                <h3>Family Suite</h3>
+                <p>A larger option for families or groups that want comfort, convenience, and a relaxed stay near the city centre.</p>
+              </div>
+              <div class="room-meta">
+                <span>Family Stay</span>
+                <span>3–4 Guests</span>
+                <span>City Access</span>
+              </div>
+              <div class="price-row">
+                <div>
+                  <strong>From ₹7,200 / night</strong>
+                  <span class="price-note">Sample rate · update after tariff confirmation</span>
+                </div>
+                <a class="btn-secondary" href="#booking">Book</a>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-label="Guest experience">
+      <div class="container">
+        <div class="section-header reveal">
+          <div>
+            <span class="eyebrow">Why Guests Choose Us</span>
+            <h2>Built around trust, warmth, and convenience.</h2>
+          </div>
+        </div>
+        <div class="experience-grid">
+          <article class="experience-card reveal">
+            <h3>Near key attractions</h3>
+            <p>Stay close to Mall Road, shopping, food, and the city atmosphere guests want to experience.</p>
+          </article>
+          <article class="experience-card reveal">
+            <h3>Elegant interiors</h3>
+            <p>Wood textures, warm lighting, and boutique details create a stronger first impression than generic hotels.</p>
+          </article>
+          <article class="experience-card reveal">
+            <h3>Direct communication</h3>
+            <p>Guests can contact you quickly by phone, WhatsApp, email, or direct booking inquiry form.</p>
+          </article>
+          <article class="experience-card reveal">
+            <h3>Simple payment flow</h3>
+            <p>A clean payment or advance-booking link reduces friction for guests who are ready to confirm right away.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="gallery">
+      <div class="container">
+        <div class="section-header reveal">
+          <div>
+            <span class="eyebrow">Gallery</span>
+            <h2>Show the experience before the guest arrives.</h2>
+          </div>
+          <p class="lead">Click any image to open it larger. Replace filenames below with your final optimized image set.</p>
+        </div>
+
+        <div class="gallery-grid">
+          <button class="gallery-card reveal" data-full="images/lobby-reception.jpg" style="background-image:url('images/lobby-reception.jpg');">
+            <span class="gallery-label">Reception & Lobby</span>
+          </button>
+          <button class="gallery-card reveal" data-full="images/room-deluxe-1.jpg" style="background-image:url('images/room-deluxe-1.jpg');">
+            <span class="gallery-label">Deluxe Room</span>
+          </button>
+          <button class="gallery-card reveal" data-full="images/exterior-night.jpg" style="background-image:url('images/exterior-night.jpg');">
+            <span class="gallery-label">Exterior View</span>
+          </button>
+          <button class="gallery-card reveal" data-full="images/lounge.jpg" style="background-image:url('images/lounge.jpg');">
+            <span class="gallery-label">Lounge Area</span>
+          </button>
+          <button class="gallery-card reveal" data-full="images/room-suite.jpg" style="background-image:url('images/room-suite.jpg');">
+            <span class="gallery-label">Suite Room</span>
+          </button>
+          <button class="gallery-card reveal" data-full="images/room-deluxe-2.jpg" style="background-image:url('images/room-deluxe-2.jpg');">
+            <span class="gallery-label">Executive Room</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="location">
+      <div class="container location-wrap">
+        <article class="card location-card reveal">
+          <span class="eyebrow">Location</span>
+          <h2>Easy to find. Easy to love.</h2>
+          <p>
+            Conveniently located near Mall Road in Darjeeling, Omega Residency gives guests quick access to the city's
+            atmosphere while still feeling private and comfortable.
+          </p>
+          <div class="address-box">
+            <strong>Hotel Address</strong>
+            <p>HD Lama Road, near Mall Road, Chauk Bazaar, Darjeeling, West Bengal 734101</p>
+          </div>
+          <div class="contact-box">
+            <strong>Map Link</strong>
+            <p>Replace the button below with your Google Maps share URL or embedded map iframe.</p>
+          </div>
+          <div class="hero-actions">
+            <a class="btn-secondary" href="https://maps.google.com" target="_blank" rel="noreferrer">Open Google Maps</a>
+            <a class="ghost-btn" href="tel:+918509307438">Call for Directions</a>
+          </div>
+        </article>
+
+        <div class="location-card__image reveal" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <section class="section" id="booking">
+      <div class="container payment-grid">
+        <article class="card payment-card reveal">
+          <span class="eyebrow">Booking & Advance Payment</span>
+          <h2>Direct booking flow for a static website.</h2>
+          <p>
+            Because this site is designed for GitHub Pages, the simplest and safest flow is: guest chooses room, contacts you,
+            then pays an advance through a hosted payment page or payment button.
+          </p>
+
+          <div class="steps">
+            <div class="step">
+              <div class="step-number">1</div>
+              <div>
+                <strong>Guest sends inquiry</strong>
+                <p>Use the form, call, or WhatsApp to confirm room type, dates, and availability.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">2</div>
+              <div>
+                <strong>Share payment link</strong>
+                <p>Send a hosted advance-payment link or let the guest click the payment button here on the site.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">3</div>
+              <div>
+                <strong>Confirm booking manually</strong>
+                <p>After payment, confirm the reservation by phone, WhatsApp, or email until you later add a backend booking system.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-actions">
+            <a class="btn" href="https://rzp.io/your-payment-link" target="_blank" rel="noreferrer">Pay Booking Advance</a>
+            <a class="btn-secondary" href="https://wa.me/918509307438" target="_blank" rel="noreferrer">Book on WhatsApp</a>
+          </div>
+          <p class="notice">
+            Replace the placeholder payment link above with your live Razorpay, Stripe, or other hosted checkout URL.
+          </p>
+        </article>
+
+        <aside class="card payment-card reveal">
+          <div class="payment-box">
+            <strong>Suggested setup</strong>
+            <p>
+              For the first launch, use a hosted payment page instead of collecting card details directly on a static site.
+            </p>
+          </div>
+          <div class="payment-box">
+            <strong>Best for India</strong>
+            <p>Razorpay Payment Button or a payment link for advance deposits.</p>
+          </div>
+          <div class="payment-box">
+            <strong>Best for international cards</strong>
+            <p>Stripe Checkout or another hosted checkout page, if your business setup supports it.</p>
+          </div>
+          <div class="payment-box">
+            <strong>Next upgrade</strong>
+            <p>Add a backend and a full booking engine only after the brochure site starts generating regular inquiries.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="contact">
+      <div class="container contact-grid">
+        <article class="card contact-card reveal">
+          <span class="eyebrow">Contact Us</span>
+          <h2>Talk to the hotel directly.</h2>
+          <p class="lead">Direct communication builds trust faster for hotels than forcing people through a complicated booking flow.</p>
+
+          <div class="contact-list">
+            <div class="contact-item">
+              <span>Primary Phone</span>
+              <strong><a href="tel:+918509307438">+91 85093 07438</a></strong>
+            </div>
+            <div class="contact-item">
+              <span>Landline</span>
+              <strong><a href="tel:+913542254990">0354 2254990</a></strong>
+            </div>
+            <div class="contact-item">
+              <span>Email</span>
+              <strong><a href="mailto:omegaresidencydarj@gmail.com">omegaresidencydarj@gmail.com</a></strong>
+            </div>
+            <div class="contact-item">
+              <span>WhatsApp</span>
+              <strong><a href="https://wa.me/918509307438" target="_blank" rel="noreferrer">Message on WhatsApp</a></strong>
+            </div>
+          </div>
+        </article>
+
+        <article class="card form-card reveal">
+          <span class="eyebrow">Booking Inquiry</span>
+          <h2>Collect leads cleanly.</h2>
+          <form id="bookingForm">
+            <div class="field">
+              <label for="name">Full Name</label>
+              <input id="name" name="name" type="text" placeholder="Guest name" required />
+            </div>
+            <div class="field">
+              <label for="phone">Phone or WhatsApp</label>
+              <input id="phone" name="phone" type="tel" placeholder="Contact number" required />
+            </div>
+            <div class="field">
+              <label for="checkin">Check-in Date</label>
+              <input id="checkin" name="checkin" type="date" />
+            </div>
+            <div class="field">
+              <label for="checkout">Check-out Date</label>
+              <input id="checkout" name="checkout" type="date" />
+            </div>
+            <div class="field">
+              <label for="room">Room Type</label>
+              <select id="room" name="room">
+                <option value="Deluxe Room">Deluxe Room</option>
+                <option value="Executive Room">Executive Room</option>
+                <option value="Family Suite">Family Suite</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="message">Message</label>
+              <textarea id="message" name="message" placeholder="Adults, kids, special requests, pickup, payment questions, etc."></textarea>
+            </div>
+            <button class="btn" type="submit">Send Inquiry on WhatsApp</button>
+            <p class="notice">This form currently opens WhatsApp with the details. Replace later with Formspree, Netlify Forms, or your own backend if needed.</p>
+          </form>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand" style="align-items:flex-start;">
+            <div class="brand-mark">OR</div>
+            <div class="brand-copy">
+              <strong>Omega Residency</strong>
+              <span>Boutique Hotel in Darjeeling</span>
+            </div>
+          </div>
+          <p style="margin-top:1rem; max-width:48ch;">
+            A warm, boutique stay near Mall Road with elegant interiors, direct booking support, and a comfortable base for exploring Darjeeling.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <strong>Quick Links</strong>
+          <ul>
+            <li><a href="#about">About</a></li>
+            <li><a href="#rooms">Rooms</a></li>
+            <li><a href="#gallery">Gallery</a></li>
+            <li><a href="#location">Location</a></li>
+            <li><a href="#booking">Booking</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <strong>Contact</strong>
+          <ul>
+            <li><a href="tel:+918509307438">+91 85093 07438</a></li>
+            <li><a href="tel:+913542254990">0354 2254990</a></li>
+            <li><a href="mailto:omegaresidencydarj@gmail.com">omegaresidencydarj@gmail.com</a></li>
+            <li>HD Lama Road, Darjeeling</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© <span id="year"></span> Omega Residency Darjeeling. All rights reserved.</span>
+        <span>Designed for fast loading, direct bookings, and easy GitHub Pages deployment.</span>
+      </div>
+    </div>
+  </footer>
+
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <button class="lightbox-close" id="lightboxClose" aria-label="Close image preview">×</button>
+    <img id="lightboxImage" src="" alt="Expanded hotel gallery image" />
+  </div>
+
+  <script>
+    const menuBtn = document.getElementById('menuBtn');
+    const navLinks = document.getElementById('navLinks');
+    const bookingForm = document.getElementById('bookingForm');
+    const yearEl = document.getElementById('year');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImage = document.getElementById('lightboxImage');
+    const lightboxClose = document.getElementById('lightboxClose');
+    const galleryCards = document.querySelectorAll('.gallery-card');
+    const revealEls = document.querySelectorAll('.reveal');
+
+    yearEl.textContent = new Date().getFullYear();
+
+    if (menuBtn) {
+      menuBtn.addEventListener('click', () => {
+        const isOpen = navLinks.classList.toggle('open');
+        menuBtn.setAttribute('aria-expanded', String(isOpen));
+      });
+    }
+
+    document.querySelectorAll('.nav-links a').forEach(link => {
+      link.addEventListener('click', () => {
+        navLinks.classList.remove('open');
+        menuBtn?.setAttribute('aria-expanded', 'false');
+      });
+    });
+
+    bookingForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      const formData = new FormData(bookingForm);
+      const name = formData.get('name')?.toString().trim() || '';
+      const phone = formData.get('phone')?.toString().trim() || '';
+      const checkin = formData.get('checkin')?.toString().trim() || 'Not specified';
+      const checkout = formData.get('checkout')?.toString().trim() || 'Not specified';
+      const room = formData.get('room')?.toString().trim() || 'Not specified';
+      const message = formData.get('message')?.toString().trim() || 'No extra message';
+
+      const whatsappText = encodeURIComponent(
+        `Hello Omega Residency, I would like to make a booking inquiry.%0A%0A` +
+        `Name: ${name}%0A` +
+        `Phone: ${phone}%0A` +
+        `Check-in: ${checkin}%0A` +
+        `Check-out: ${checkout}%0A` +
+        `Room Type: ${room}%0A` +
+        `Message: ${message}`
+      );
+
+      window.open(`https://wa.me/918509307438?text=${whatsappText}`, '_blank', 'noopener');
+    });
+
+    galleryCards.forEach(card => {
+      card.addEventListener('click', () => {
+        const imageSrc = card.dataset.full;
+        if (!imageSrc) return;
+        lightboxImage.src = imageSrc;
+        lightbox.classList.add('open');
+        lightbox.setAttribute('aria-hidden', 'false');
+      });
+    });
+
+    const closeLightbox = () => {
+      lightbox.classList.remove('open');
+      lightbox.setAttribute('aria-hidden', 'true');
+      lightboxImage.src = '';
+    };
+
+    lightboxClose?.addEventListener('click', closeLightbox);
+    lightbox?.addEventListener('click', (event) => {
+      if (event.target === lightbox) closeLightbox();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeLightbox();
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    revealEls.forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
