@@ -698,22 +698,25 @@ textarea { min-height: 120px; resize: vertical; }
 }
 
 @media (max-width: 860px) {
+  :root { --header-height: 88px; }
   .topbar { backdrop-filter: blur(6px); }
   .nav {
-    min-height: 72px;
-    gap: 0.65rem;
+    min-height: 70px;
+    gap: 0.55rem;
+    padding: 0.35rem 0;
   }
   .brand {
-    gap: 0.6rem;
+    gap: 0.48rem;
     padding: 0.18rem 0.25rem 0.18rem 0;
   }
   .brand-mark {
-    width: 52px;
-    height: 52px;
-    border-radius: 13px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
   }
-  .brand-copy strong { font-size: 0.98rem; }
+  .brand-copy strong { font-size: 0.92rem; }
   .brand-copy span { font-size: 0.78rem; }
+  .nav-actions { margin-left: auto; gap: 0.45rem; }
   .ghost-btn { padding: 0.62rem 0.86rem; font-size: 0.88rem; }
   .mobile-menu-btn { display: inline-flex; align-items: center; justify-content: center; }
   .nav-links {
@@ -732,29 +735,75 @@ textarea { min-height: 120px; resize: vertical; }
   .nav-links.open { display: flex; }
   .nav-actions .btn {
     display: inline-flex;
-    padding: 0.62rem 0.86rem;
-    font-size: 0.88rem;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0.54rem 0.78rem;
+    font-size: 0.8rem;
+    line-height: 1.08;
+    max-width: 128px;
   }
+  .hero-content { padding: 1.2rem; }
+  .room-meta h2 { font-size: clamp(1.8rem, 5.5vw, 2.2rem) !important; line-height: 1.08; }
+  .room-price strong { font-size: 1.85rem; }
+  .booking-main { padding: 1rem; }
+  .booking-steps { gap: 0.5rem; margin: 0.7rem 0 0.95rem; }
+  .step-pill { padding: 0.35rem 0.62rem; font-size: 0.84rem; }
+  .addon-item label { display: flex; align-items: center; gap: 0.42rem; }
   .page { padding-top: 1.25rem; }
 }
 
 @media (max-width: 640px) {
+  :root { --header-height: 96px; }
   .container { width: min(var(--max-width), calc(100% - 1rem)); }
   .grid-3,
   .grid-4 { grid-template-columns: 1fr; }
   .booking-form-grid { grid-template-columns: 1fr; }
   .booking-form-grid .full { grid-column: span 1; }
-  .hero-media { min-height: 280px; }
-  .section { padding: 2.9rem 0; }
+  .hero-media { min-height: 240px; }
+  .section { padding: 2.35rem 0; }
   .panel, .room-card, .hero-card { border-radius: 18px; }
-  .gallery-item img { height: 210px; }
-  .step-pill { font-size: 0.84rem; }
+  .gallery-item img { height: 200px; }
+  .page { padding-top: 1rem; padding-bottom: 2.8rem; }
+  .lead { font-size: 0.98rem; }
+  .room-card { padding: 0.85rem; gap: 0.72rem; }
+  .room-card img { height: 220px; }
+  .room-meta h2 { font-size: clamp(1.55rem, 9.3vw, 2.1rem) !important; }
+  .room-price { gap: 0.5rem; }
+  .room-price strong { font-size: 1.7rem; }
+  .booking-main { padding: 0.95rem; }
+  .booking-steps { margin: 0.6rem 0 0.8rem; }
+  .step-pill { font-size: 0.8rem; }
+  .addon-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.6rem;
+    padding: 0.52rem 0.58rem;
+  }
+  .addon-item label {
+    display: flex;
+    align-items: center;
+    gap: 0.46rem;
+    font-size: 0.95rem;
+  }
+  .addon-item input[type="number"] {
+    max-width: 76px;
+    padding: 0.42rem 0.5rem;
+  }
+  .stage-actions .btn,
+  .stage-actions .btn-secondary {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
   .footer-row { justify-content: center; text-align: center; }
   .calendar-panel { padding: 0.82rem; }
   .brand-copy span { display: none; }
-  .brand-copy strong { font-size: 0.94rem; }
+  .brand-copy strong { font-size: 0.9rem; }
   .ghost-btn { display: none; }
-  .nav-actions .btn { padding: 0.58rem 0.8rem; }
+  .nav-actions .btn { padding: 0.52rem 0.74rem; max-width: 120px; font-size: 0.78rem; }
+  h1 { line-height: 1.08; }
+  h2 { line-height: 1.12; }
   .calendar-day,
   .calendar-empty { height: 36px; }
 }
