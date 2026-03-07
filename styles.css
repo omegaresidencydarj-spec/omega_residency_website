@@ -738,6 +738,11 @@ body.calendar-open {
   flex-wrap: wrap;
 }
 
+.footer-row-single {
+  justify-content: center;
+  text-align: center;
+}
+
 .form-card form {
   padding: 1.2rem;
   display: grid;
@@ -747,6 +752,50 @@ body.calendar-open {
 .map-link-btn {
   margin-top: 0.2rem;
   display: inline-flex;
+}
+
+.contact-footer-row {
+  align-items: center;
+}
+
+.contact-social {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.social-icon-link {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  border: 1px solid rgba(45, 34, 27, 0.2);
+  background: #f6efe6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.social-icon-link:hover,
+.social-icon-link:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(45, 34, 27, 0.12);
+}
+
+.social-icon-link .social-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  display: block;
+}
+
+.social-icon-link .instagram-icon {
+  transform: scale(1.2);
+}
+
+.social-icon-link .facebook-icon {
+  transform: scale(1.35);
 }
 
 label { font-weight: 600; }
@@ -931,6 +980,13 @@ textarea { min-height: 120px; resize: vertical; }
     text-align: center;
   }
   .footer-row { justify-content: center; text-align: center; }
+  .contact-footer-row {
+    gap: 0.6rem;
+  }
+  .contact-social {
+    width: 100%;
+    justify-content: center;
+  }
   .calendar-panel { padding: 0.82rem; }
   .brand-copy span { display: none; }
   .brand-copy strong {
