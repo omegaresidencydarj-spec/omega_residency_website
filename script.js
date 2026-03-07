@@ -1,4 +1,45 @@
 (function () {
+  var BOOKING_STORAGE_KEY = 'omega_booking_draft_v1';
+
+  var roomLabels = {
+    maple: 'Maple Deluxe (E/P Plan)',
+    olive: 'Olive Suite (E/P Plan)',
+    pine: 'Pine Suite (E/P Plan)'
+  };
+
+  var tariffFallback = { maple: 7000, olive: 10000, pine: 10000 };
+
+  var addonRates = {
+    extra_bed: 1000,
+    heater: 500,
+    hot_bag: 100,
+    bed_blanket: 300,
+    combo: 700,
+    meals: 600
+  };
+
+  var addonLabels = {
+    extra_bed: 'Extra Bed',
+    heater: 'Heater',
+    hot_bag: 'Electric Hot Water Bag',
+    bed_blanket: 'Electric Bed Blanket',
+    combo: 'Heating Combo',
+    meals: 'Meals'
+  };
+
+  var includedGuests = 2;
+  var extraGuestRates = { maple: 600, olive: 900, pine: 900 };
+
+  var seasonal = [
+    { name: 'Late Winter', from: '01-03', to: '03-31', rates: { maple: 1800, olive: 3000, pine: 3000 } },
+    { name: 'Spring Peak', from: '04-01', to: '04-20', rates: { maple: 1950, olive: 3450, pine: 3450 } },
+    { name: 'Summer Peak', from: '04-21', to: '06-10', rates: { maple: 4100, olive: 7100, pine: 7100 } },
+    { name: 'Monsoon', from: '06-10', to: '09-25', rates: { maple: 1900, olive: 3300, pine: 3300 } },
+    { name: 'Autumn Peak', from: '09-25', to: '11-01', rates: { maple: 4100, olive: 7200, pine: 7200 } },
+    { name: 'Early Winter', from: '11-01', to: '12-20', rates: { maple: 1950, olive: 3450, pine: 3450 } },
+    { name: 'Year-End Peak', from: '12-20', to: '01-02', rates: { maple: 4100, olive: 7100, pine: 7100 } }
+  ];
+
   var menuBtn = document.getElementById('menuBtn');
   var navLinks = document.getElementById('navLinks');
   var yearEls = document.querySelectorAll('.year');
@@ -8,9 +49,7 @@
 
   if (page) {
     document.querySelectorAll('.nav-links a[data-page]').forEach(function (a) {
-      if (a.getAttribute('data-page') === page) {
-        a.classList.add('active');
-      }
+      if (a.getAttribute('data-page') === page) a.classList.add('active');
     });
   }
 
@@ -49,41 +88,227 @@
     });
   }
 
-  if (page === 'rooms') {
-    var checkinEl = document.getElementById('checkinDate');
-    var checkoutEl = document.getElementById('checkoutDate');
-    var checkinDisplay = document.getElementById('checkinDisplay');
-    var checkoutDisplay = document.getElementById('checkoutDisplay');
-    var roomTypeEl = document.getElementById('roomType');
-    var guestsEl = document.getElementById('guestsCount');
-    var titleEl = document.getElementById('titleSelect');
-    var firstNameEl = document.getElementById('firstName');
-    var lastNameEl = document.getElementById('lastName');
-    var emailEl = document.getElementById('guestEmail');
-    var phoneEl = document.getElementById('guestPhone');
-    var specialReqEl = document.getElementById('specialRequest');
-    var addonsChecks = document.querySelectorAll('.addon-check');
-    var addonsQty = document.querySelectorAll('.addon-qty');
+  var formatInr = function (v) { return '₹' + Math.round(Number(v) || 0).toLocaleString('en-IN'); };
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  var toIso = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+
+  var fromIso = function (iso) {
+    if (!iso) return null;
+    var d = new Date(iso + 'T00:00:00');
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
+  var startOfDay = function (d) {
+    var out = new Date(d);
+    out.setHours(0, 0, 0, 0);
+    return out;
+  };
+
+  var addDays = function (d, days) {
+    var out = new Date(d);
+    out.setDate(out.getDate() + days);
+    return startOfDay(out);
+  };
+
+  var clampGuests = function (v) {
+    var n = Math.floor(Number(v) || 0);
+    if (n < 1) return 1;
+    if (n > 12) return 12;
+    return n;
+  };
+
+  var toKey = function (d) {
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return m + '-' + day;
+  };
+
+  var isInSeason = function (key, from, to) {
+    if (from <= to) return key >= from && key <= to;
+    return key >= from || key <= to;
+  };
+
+  var getNightRate = function (room, dateObj) {
+    var key = toKey(dateObj);
+    for (var i = 0; i < seasonal.length; i += 1) {
+      if (isInSeason(key, seasonal[i].from, seasonal[i].to)) {
+        return seasonal[i].rates[room];
+      }
+    }
+    return tariffFallback[room];
+  };
+
+  var formatDateLabel = function (iso) {
+    var d = fromIso(iso);
+    if (!d) return '-';
+    return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  var getDefaultState = function () {
+    var today = startOfDay(new Date());
+    var tomorrow = addDays(today, 1);
+    return {
+      room: 'maple',
+      checkin: toIso(today),
+      checkout: toIso(tomorrow),
+      guests: 2,
+      guestDetails: {
+        title: 'Mr',
+        firstName: '',
+        lastName: '',
+        phone: '',
+        email: '',
+        specialRequest: ''
+      },
+      addons: {
+        extra_bed: 0,
+        heater: 0,
+        hot_bag: 0,
+        bed_blanket: 0,
+        combo: 0,
+        meals: 0
+      }
+    };
+  };
+
+  var sanitizeState = function (raw) {
+    var defaults = getDefaultState();
+    var state = raw && typeof raw === 'object' ? raw : {};
+    var room = roomLabels[state.room] ? state.room : defaults.room;
+
+    var checkinDate = fromIso(state.checkin) || fromIso(defaults.checkin);
+    var checkoutDate = fromIso(state.checkout) || addDays(checkinDate, 1);
+    if (checkoutDate <= checkinDate) checkoutDate = addDays(checkinDate, 1);
+
+    var guestDetails = state.guestDetails && typeof state.guestDetails === 'object' ? state.guestDetails : {};
+    var addons = state.addons && typeof state.addons === 'object' ? state.addons : {};
+
+    return {
+      room: room,
+      checkin: toIso(checkinDate),
+      checkout: toIso(checkoutDate),
+      guests: clampGuests(state.guests),
+      guestDetails: {
+        title: typeof guestDetails.title === 'string' && guestDetails.title ? guestDetails.title : defaults.guestDetails.title,
+        firstName: typeof guestDetails.firstName === 'string' ? guestDetails.firstName : '',
+        lastName: typeof guestDetails.lastName === 'string' ? guestDetails.lastName : '',
+        phone: typeof guestDetails.phone === 'string' ? guestDetails.phone : '',
+        email: typeof guestDetails.email === 'string' ? guestDetails.email : '',
+        specialRequest: typeof guestDetails.specialRequest === 'string' ? guestDetails.specialRequest : ''
+      },
+      addons: {
+        extra_bed: Math.max(0, Number(addons.extra_bed) || 0),
+        heater: Math.max(0, Number(addons.heater) || 0),
+        hot_bag: Math.max(0, Number(addons.hot_bag) || 0),
+        bed_blanket: Math.max(0, Number(addons.bed_blanket) || 0),
+        combo: Math.max(0, Number(addons.combo) || 0),
+        meals: Math.max(0, Number(addons.meals) || 0)
+      }
+    };
+  };
+
+  var loadBookingState = function () {
+    var defaults = getDefaultState();
+    try {
+      var raw = window.sessionStorage.getItem(BOOKING_STORAGE_KEY);
+      if (!raw) return defaults;
+      return sanitizeState(JSON.parse(raw));
+    } catch (err) {
+      return defaults;
+    }
+  };
+
+  var saveBookingState = function (state) {
+    try {
+      window.sessionStorage.setItem(BOOKING_STORAGE_KEY, JSON.stringify(sanitizeState(state)));
+    } catch (err) {
+      // Ignore storage errors.
+    }
+  };
+
+  var getStayBase = function (room, checkinIso, checkoutIso, guests) {
+    var checkin = fromIso(checkinIso);
+    var checkout = fromIso(checkoutIso);
+    if (!checkin || !checkout || checkout <= checkin) {
+      return { nights: 0, base: 0 };
+    }
+
+    var nights = 0;
+    var base = 0;
+    var cursor = new Date(checkin);
+
+    while (cursor < checkout) {
+      base += getNightRate(room, cursor);
+      nights += 1;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    var extraGuests = Math.max(0, clampGuests(guests) - includedGuests);
+    if (extraGuests > 0 && nights > 0) {
+      base += extraGuests * (extraGuestRates[room] || 0) * nights;
+    }
+
+    return { nights: nights, base: base };
+  };
+
+  var getAddonsTotal = function (addons, guests, nights) {
+    var total = 0;
+    var guestCount = clampGuests(guests);
+    var nightCount = Math.max(1, nights);
+
+    Object.keys(addonRates).forEach(function (addon) {
+      var qty = Math.max(0, Number(addons[addon]) || 0);
+      if (qty < 1) return;
+      if (addon === 'meals') total += addonRates[addon] * qty * guestCount * nightCount;
+      else total += addonRates[addon] * qty;
+    });
+
+    return total;
+  };
+
+  var getBookingTotals = function (state) {
+    var stay = getStayBase(state.room, state.checkin, state.checkout, state.guests);
+    var addonsTotal = getAddonsTotal(state.addons, state.guests, stay.nights);
+    return {
+      nights: stay.nights,
+      base: stay.base,
+      addons: addonsTotal,
+      total: stay.base + addonsTotal
+    };
+  };
+
+  var updateSummaryPanel = function (state, totals) {
     var sumRoom = document.getElementById('sumRoom');
     var sumNights = document.getElementById('sumNights');
     var sumBase = document.getElementById('sumBase');
     var sumAddons = document.getElementById('sumAddons');
     var sumTotal = document.getElementById('sumTotal');
-    var waQuoteBtn = document.getElementById('whatsAppQuoteBtn');
+
+    if (sumRoom) sumRoom.textContent = roomLabels[state.room] || roomLabels.maple;
+    if (sumNights) sumNights.textContent = String(totals.nights);
+    if (sumBase) sumBase.textContent = formatInr(totals.base);
+    if (sumAddons) sumAddons.textContent = formatInr(totals.addons);
+    if (sumTotal) sumTotal.textContent = formatInr(totals.total);
+  };
+
+  var getAddonBreakdown = function (addons) {
+    var items = [];
+    Object.keys(addonRates).forEach(function (addon) {
+      var qty = Math.max(0, Number(addons[addon]) || 0);
+      if (qty > 0) items.push(addonLabels[addon] + ' x' + qty);
+    });
+    return items.length ? items.join(', ') : 'None';
+  };
+
+  var initRoomsPage = function () {
+    var checkinEl = document.getElementById('checkinDate');
+    var checkoutEl = document.getElementById('checkoutDate');
+    var guestsEl = document.getElementById('guestsCount');
+    var checkinDisplay = document.getElementById('checkinDisplay');
+    var checkoutDisplay = document.getElementById('checkoutDisplay');
+    var roomPriceValueEls = document.querySelectorAll('[data-room-price]');
     var roomPickBtns = document.querySelectorAll('.book-room-btn');
-    var stepPills = document.querySelectorAll('.step-pill');
-    var stageEls = document.querySelectorAll('.booking-stage');
-    var bookingHint = document.getElementById('bookingHint');
-    var toStep2Btn = document.getElementById('toStep2');
-    var toStep3Btn = document.getElementById('toStep3');
-    var backToStep1Btn = document.getElementById('backToStep1');
-    var backToStep2Btn = document.getElementById('backToStep2');
-    var confirmGuest = document.getElementById('confirmGuest');
-    var confirmRoom = document.getElementById('confirmRoom');
-    var confirmDates = document.getElementById('confirmDates');
-    var confirmGuests = document.getElementById('confirmGuests');
-    var confirmAddons = document.getElementById('confirmAddons');
-    var confirmTotal = document.getElementById('confirmTotal');
+
     var calendarModal = document.getElementById('calendarModal');
     var calendarGrid = document.getElementById('calendarGrid');
     var calendarMonthLabel = document.getElementById('calendarMonthLabel');
@@ -92,136 +317,86 @@
     var calendarNext = document.getElementById('calendarNext');
     var calendarCancel = document.getElementById('calendarCancel');
 
-    var roomLabels = {
-      maple: 'Maple Deluxe (E/P Plan)',
-      olive: 'Olive Suite (E/P Plan)',
-      pine: 'Pine Suite (E/P Plan)'
-    };
+    if (!checkinEl || !checkoutEl || !guestsEl || !checkinDisplay || !checkoutDisplay) return;
 
-    var tariffFallback = { maple: 7000, olive: 10000, pine: 10000 };
-    var addonRates = {
-      extra_bed: 1000,
-      heater: 500,
-      hot_bag: 100,
-      bed_blanket: 300,
-      combo: 700,
-      meals: 600
-    };
+    var state = loadBookingState();
+    checkinEl.value = state.checkin;
+    checkoutEl.value = state.checkout;
+    guestsEl.value = String(state.guests);
 
-    var seasonal = [
-      { name: 'Late Winter', from: '01-03', to: '03-31', rates: { maple: 1800, olive: 3000, pine: 3000 } },
-      { name: 'Spring Peak', from: '04-01', to: '04-20', rates: { maple: 1950, olive: 3450, pine: 3450 } },
-      { name: 'Summer Peak', from: '04-21', to: '06-10', rates: { maple: 4100, olive: 7100, pine: 7100 } },
-      { name: 'Monsoon', from: '06-10', to: '09-25', rates: { maple: 1900, olive: 3300, pine: 3300 } },
-      { name: 'Autumn Peak', from: '09-25', to: '11-01', rates: { maple: 4100, olive: 7200, pine: 7200 } },
-      { name: 'Early Winter', from: '11-01', to: '12-20', rates: { maple: 1950, olive: 3450, pine: 3450 } },
-      { name: 'Year-End Peak', from: '12-20', to: '01-02', rates: { maple: 4100, olive: 7100, pine: 7100 } }
-    ];
+    var calendarState = { field: 'checkin', month: new Date() };
 
-    var currentStep = 1;
-    var maxUnlockedStep = 1;
-    var lastTotals = { room: 'maple', guests: 2, nights: 0, base: 0, addons: 0, total: 0 };
+    var syncPlannerState = function () {
+      var checkinDate = fromIso(checkinEl.value) || startOfDay(new Date());
+      var checkoutDate = fromIso(checkoutEl.value) || addDays(checkinDate, 1);
+      if (checkoutDate <= checkinDate) checkoutDate = addDays(checkinDate, 1);
 
-    var formatInr = function (v) { return '₹' + Math.round(v).toLocaleString('en-IN'); };
-    var setHint = function (text) { if (bookingHint) bookingHint.textContent = text || ''; };
-    var toKey = function (d) {
-      var m = String(d.getMonth() + 1).padStart(2, '0');
-      var day = String(d.getDate()).padStart(2, '0');
-      return m + '-' + day;
-    };
-    var isInSeason = function (key, from, to) {
-      if (from <= to) return key >= from && key <= to;
-      return key >= from || key <= to;
-    };
-    var getNightRate = function (room, dateObj) {
-      var key = toKey(dateObj);
-      for (var i = 0; i < seasonal.length; i += 1) {
-        if (isInSeason(key, seasonal[i].from, seasonal[i].to)) {
-          return seasonal[i].rates[room];
-        }
-      }
-      return tariffFallback[room];
-    };
+      state.checkin = toIso(checkinDate);
+      state.checkout = toIso(checkoutDate);
+      state.guests = clampGuests(guestsEl.value);
 
-    var pad = function (n) { return String(n).padStart(2, '0'); };
-    var toIso = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
-    var fromIso = function (iso) {
-      if (!iso) return null;
-      var d = new Date(iso + 'T00:00:00');
-      return Number.isNaN(d.getTime()) ? null : d;
-    };
-    var startOfDay = function (d) {
-      var out = new Date(d);
-      out.setHours(0, 0, 0, 0);
-      return out;
-    };
-    var addDays = function (d, days) {
-      var out = new Date(d);
-      out.setDate(out.getDate() + days);
-      return startOfDay(out);
-    };
-    var sameDay = function (a, b) {
-      return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-    };
-    var formatDateLabel = function (iso) {
-      var d = fromIso(iso);
-      if (!d) return '';
-      return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-    };
-
-    var today = startOfDay(new Date());
-    var tomorrow = addDays(today, 1);
-    var calendarState = { field: 'checkin', month: new Date(today.getFullYear(), today.getMonth(), 1) };
-
-    var parseDates = function () {
-      var checkin = checkinEl && checkinEl.value ? fromIso(checkinEl.value) : null;
-      var checkout = checkoutEl && checkoutEl.value ? fromIso(checkoutEl.value) : null;
-      return { checkin: checkin, checkout: checkout };
-    };
-
-    var updateDateBounds = function () {
-      if (!checkinEl || !checkoutEl) return;
-      var ci = fromIso(checkinEl.value);
-      var co = fromIso(checkoutEl.value);
-      if (ci) {
-        var minCheckout = addDays(ci, 1);
-        if (!co || co <= ci) {
-          checkoutEl.value = toIso(minCheckout);
-        }
-      }
+      checkinEl.value = state.checkin;
+      checkoutEl.value = state.checkout;
+      guestsEl.value = String(state.guests);
     };
 
     var updateDateDisplays = function () {
-      if (checkinDisplay) {
-        var checkinLabel = checkinDisplay.querySelector('.calendar-trigger-label');
-        if (checkinLabel) {
-          checkinLabel.textContent = checkinEl && checkinEl.value ? formatDateLabel(checkinEl.value) : 'Select check-in date';
+      var checkinLabel = checkinDisplay.querySelector('.calendar-trigger-label');
+      var checkoutLabel = checkoutDisplay.querySelector('.calendar-trigger-label');
+      if (checkinLabel) checkinLabel.textContent = formatDateLabel(state.checkin);
+      if (checkoutLabel) checkoutLabel.textContent = formatDateLabel(state.checkout);
+      checkinDisplay.classList.add('has-value');
+      checkoutDisplay.classList.add('has-value');
+    };
+
+    var updateRoomTariffs = function () {
+      roomPriceValueEls.forEach(function (valueEl) {
+        var room = valueEl.getAttribute('data-room-price');
+        if (!room) return;
+
+        var labelEl = document.querySelector('[data-room-price-label="' + room + '"]');
+        var noteEl = document.querySelector('[data-room-price-note="' + room + '"]');
+        var stay = getStayBase(room, state.checkin, state.checkout, state.guests);
+
+        if (stay.nights < 1) {
+          valueEl.textContent = formatInr(tariffFallback[room] || 0);
+          if (labelEl) labelEl.textContent = 'From';
+          if (noteEl) noteEl.textContent = '1 night · 2 guests';
+          return;
         }
-        checkinDisplay.classList.toggle('has-value', !!(checkinEl && checkinEl.value));
-      }
-      if (checkoutDisplay) {
-        var checkoutLabel = checkoutDisplay.querySelector('.calendar-trigger-label');
-        if (checkoutLabel) {
-          checkoutLabel.textContent = checkoutEl && checkoutEl.value ? formatDateLabel(checkoutEl.value) : 'Select check-out date';
+
+        valueEl.textContent = formatInr(stay.base);
+        if (labelEl) labelEl.textContent = 'Selected stay';
+        if (noteEl) {
+          var nightText = stay.nights === 1 ? '1 night' : String(stay.nights) + ' nights';
+          var guestText = state.guests === 1 ? '1 guest' : String(state.guests) + ' guests';
+          noteEl.textContent = nightText + ' · ' + guestText;
         }
-        checkoutDisplay.classList.toggle('has-value', !!(checkoutEl && checkoutEl.value));
-      }
+      });
+    };
+
+    var renderRooms = function () {
+      syncPlannerState();
+      updateDateDisplays();
+      updateRoomTariffs();
+      updateSummaryPanel(state, getBookingTotals(state));
+      saveBookingState(state);
     };
 
     var getCalendarMinDate = function (field) {
       if (field === 'checkout') {
-        var ci = fromIso(checkinEl && checkinEl.value);
-        return ci ? addDays(ci, 1) : tomorrow;
+        var ci = fromIso(checkinEl.value) || startOfDay(new Date());
+        return addDays(ci, 1);
       }
-      return today;
+      return startOfDay(new Date());
     };
 
     var closeCalendar = function () {
       if (!calendarModal) return;
       calendarModal.hidden = true;
       document.body.classList.remove('calendar-open');
-      if (checkinDisplay) checkinDisplay.setAttribute('aria-expanded', 'false');
-      if (checkoutDisplay) checkoutDisplay.setAttribute('aria-expanded', 'false');
+      checkinDisplay.setAttribute('aria-expanded', 'false');
+      checkoutDisplay.setAttribute('aria-expanded', 'false');
     };
 
     var renderCalendar = function () {
@@ -234,7 +409,7 @@
       var startWeekday = firstDay.getDay();
       var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
       var minDate = getCalendarMinDate(calendarState.field);
-      var selectedDate = calendarState.field === 'checkin' ? fromIso(checkinEl && checkinEl.value) : fromIso(checkoutEl && checkoutEl.value);
+      var selectedDate = calendarState.field === 'checkin' ? fromIso(checkinEl.value) : fromIso(checkoutEl.value);
 
       calendarMonthLabel.textContent = firstDay.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
       if (calendarHelp) {
@@ -262,19 +437,21 @@
           btn.disabled = true;
         } else {
           btn.addEventListener('click', function (event) {
-            var targetDate = new Date(viewYear, viewMonth, Number(event.currentTarget.textContent));
-            var iso = toIso(targetDate);
+            var selectedDay = Number(event.currentTarget.textContent);
+            var chosen = new Date(viewYear, viewMonth, selectedDay);
+            var iso = toIso(chosen);
             if (calendarState.field === 'checkin') checkinEl.value = iso;
             else checkoutEl.value = iso;
-            updateDateBounds();
-            updateDateDisplays();
-            calc();
+            renderRooms();
             closeCalendar();
           });
         }
 
-        if (sameDay(date, today)) btn.classList.add('today');
-        if (sameDay(date, selectedDate)) btn.classList.add('selected');
+        if (date.getTime() === startOfDay(new Date()).getTime()) btn.classList.add('today');
+        if (selectedDate && date.getFullYear() === selectedDate.getFullYear() && date.getMonth() === selectedDate.getMonth() && date.getDate() === selectedDate.getDate()) {
+          btn.classList.add('selected');
+        }
+
         calendarGrid.appendChild(btn);
       }
     };
@@ -282,114 +459,109 @@
     var openCalendarFor = function (field) {
       if (!calendarModal) return;
       calendarState.field = field;
-      var selected = field === 'checkin' ? fromIso(checkinEl && checkinEl.value) : fromIso(checkoutEl && checkoutEl.value);
+      var selected = field === 'checkin' ? fromIso(checkinEl.value) : fromIso(checkoutEl.value);
       var minDate = getCalendarMinDate(field);
       var basis = selected && selected >= minDate ? selected : minDate;
       calendarState.month = new Date(basis.getFullYear(), basis.getMonth(), 1);
       renderCalendar();
       calendarModal.hidden = false;
       document.body.classList.add('calendar-open');
-      if (checkinDisplay) checkinDisplay.setAttribute('aria-expanded', field === 'checkin' ? 'true' : 'false');
-      if (checkoutDisplay) checkoutDisplay.setAttribute('aria-expanded', field === 'checkout' ? 'true' : 'false');
+      checkinDisplay.setAttribute('aria-expanded', field === 'checkin' ? 'true' : 'false');
+      checkoutDisplay.setAttribute('aria-expanded', field === 'checkout' ? 'true' : 'false');
     };
 
-    var calc = function () {
-      if (!checkinEl || !checkoutEl || !roomTypeEl) return;
-      var room = roomTypeEl.value || 'maple';
-      var guests = Math.max(1, Number(guestsEl && guestsEl.value ? guestsEl.value : 1));
-      var d = parseDates();
-      var checkin = d.checkin;
-      var checkout = d.checkout;
-      var nights = 0;
-      var base = 0;
+    guestsEl.addEventListener('input', renderRooms);
+    guestsEl.addEventListener('change', renderRooms);
 
-      if (checkin && checkout && checkout > checkin) {
-        var cursor = new Date(checkin);
-        while (cursor < checkout) {
-          base += getNightRate(room, cursor);
-          nights += 1;
-          cursor.setDate(cursor.getDate() + 1);
-        }
-      }
+    checkinDisplay.addEventListener('click', function () { openCalendarFor('checkin'); });
+    checkoutDisplay.addEventListener('click', function () { openCalendarFor('checkout'); });
 
-      var addons = 0;
-      addonsChecks.forEach(function (ck) {
-        if (!ck.checked) return;
-        var addon = ck.getAttribute('data-addon');
-        var qtyEl = document.querySelector('.addon-qty[data-addon=\"' + addon + '\"]');
-        var qty = Math.max(1, Number(qtyEl && qtyEl.value ? qtyEl.value : 1));
-        if (addon === 'meals') {
-          addons += addonRates[addon] * qty * guests * Math.max(1, nights);
-        } else {
-          addons += addonRates[addon] * qty;
-        }
+    if (calendarPrev) {
+      calendarPrev.addEventListener('click', function () {
+        calendarState.month = new Date(calendarState.month.getFullYear(), calendarState.month.getMonth() - 1, 1);
+        renderCalendar();
       });
+    }
 
-      var total = base + addons;
-      lastTotals = { room: room, guests: guests, nights: nights, base: base, addons: addons, total: total };
+    if (calendarNext) {
+      calendarNext.addEventListener('click', function () {
+        calendarState.month = new Date(calendarState.month.getFullYear(), calendarState.month.getMonth() + 1, 1);
+        renderCalendar();
+      });
+    }
 
-      if (sumRoom) sumRoom.textContent = roomLabels[room];
-      if (sumNights) sumNights.textContent = String(nights);
-      if (sumBase) sumBase.textContent = formatInr(base);
-      if (sumAddons) sumAddons.textContent = formatInr(addons);
-      if (sumTotal) sumTotal.textContent = formatInr(total);
+    if (calendarCancel) calendarCancel.addEventListener('click', closeCalendar);
 
-      if (waQuoteBtn) {
-        var fullName = [
-          titleEl && titleEl.value ? titleEl.value : '',
-          firstNameEl && firstNameEl.value ? firstNameEl.value : '',
-          lastNameEl && lastNameEl.value ? lastNameEl.value : ''
-        ].join(' ').trim();
-        var quoteText =
-          'Hello Omega Residency, please confirm this booking quote.\n' +
-          'Guest: ' + (fullName || '-') + '\n' +
-          'Mobile: ' + (phoneEl && phoneEl.value ? phoneEl.value : '-') + '\n' +
-          'Email: ' + (emailEl && emailEl.value ? emailEl.value : '-') + '\n' +
-          'Room: ' + roomLabels[room] + '\n' +
-          'Check-in: ' + (checkinEl.value || '-') + '\n' +
-          'Check-out: ' + (checkoutEl.value || '-') + '\n' +
-          'Guests: ' + guests + '\n' +
-          'Nights: ' + nights + '\n' +
-          'Base: ' + formatInr(base) + '\n' +
-          'Add-ons: ' + formatInr(addons) + '\n' +
-          'Total: ' + formatInr(total) + '\n' +
-          'Special Requests: ' + (specialReqEl && specialReqEl.value ? specialReqEl.value : '-');
-        waQuoteBtn.href = 'https://wa.me/918509307438?text=' + encodeURIComponent(quoteText);
-      }
+    if (calendarModal) {
+      calendarModal.querySelectorAll('[data-calendar-close]').forEach(function (el) {
+        el.addEventListener('click', closeCalendar);
+      });
+    }
 
-      updateDateDisplays();
-      updateConfirmation();
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && calendarModal && !calendarModal.hidden) closeCalendar();
+    });
+
+    roomPickBtns.forEach(function (btn) {
+      btn.addEventListener('click', function (event) {
+        event.preventDefault();
+        renderRooms();
+        var room = btn.getAttribute('data-room');
+        if (roomLabels[room]) state.room = room;
+        saveBookingState(state);
+        window.location.href = 'booking.html';
+      });
+    });
+
+    renderRooms();
+  };
+
+  var initBookingPage = function () {
+    var form = document.getElementById('guestDetailsForm');
+    if (!form) return;
+
+    var state = loadBookingState();
+
+    var titleEl = document.getElementById('titleSelect');
+    var firstNameEl = document.getElementById('firstName');
+    var lastNameEl = document.getElementById('lastName');
+    var phoneEl = document.getElementById('guestPhone');
+    var emailEl = document.getElementById('guestEmail');
+    var specialReqEl = document.getElementById('specialRequest');
+    var hintEl = document.getElementById('bookingHint');
+    var backBtn = document.getElementById('backToRoomsBtn');
+
+    var bookingRoomEl = document.getElementById('bookingRoom');
+    var bookingDatesEl = document.getElementById('bookingDates');
+    var bookingGuestsEl = document.getElementById('bookingGuests');
+
+    var addonsChecks = document.querySelectorAll('.addon-check');
+    var addonsQty = document.querySelectorAll('.addon-qty');
+
+    var setHint = function (msg) {
+      if (hintEl) hintEl.textContent = msg || '';
     };
 
-    var updateConfirmation = function () {
-      if (confirmGuest) {
-        var guest = [
-          titleEl && titleEl.value ? titleEl.value : '',
-          firstNameEl && firstNameEl.value ? firstNameEl.value : '',
-          lastNameEl && lastNameEl.value ? lastNameEl.value : ''
-        ].join(' ').trim();
-        confirmGuest.textContent = guest || '-';
-      }
-      if (confirmRoom) confirmRoom.textContent = roomLabels[lastTotals.room];
-      if (confirmDates) {
-        var checkinLabel = checkinEl && checkinEl.value ? formatDateLabel(checkinEl.value) : '-';
-        var checkoutLabel = checkoutEl && checkoutEl.value ? formatDateLabel(checkoutEl.value) : '-';
-        confirmDates.textContent = checkinLabel + ' to ' + checkoutLabel;
-      }
-      if (confirmGuests) confirmGuests.textContent = String(lastTotals.guests);
-      if (confirmAddons) confirmAddons.textContent = formatInr(lastTotals.addons);
-      if (confirmTotal) confirmTotal.textContent = formatInr(lastTotals.total);
-    };
+    if (titleEl) titleEl.value = state.guestDetails.title || 'Mr';
+    if (firstNameEl) firstNameEl.value = state.guestDetails.firstName || '';
+    if (lastNameEl) lastNameEl.value = state.guestDetails.lastName || '';
+    if (phoneEl) phoneEl.value = state.guestDetails.phone || '';
+    if (emailEl) emailEl.value = state.guestDetails.email || '';
+    if (specialReqEl) specialReqEl.value = state.guestDetails.specialRequest || '';
 
-    var syncAddonState = function () {
+    var applyAddonsToUi = function () {
       addonsChecks.forEach(function (ck) {
         var addon = ck.getAttribute('data-addon');
-        var qtyEl = document.querySelector('.addon-qty[data-addon=\"' + addon + '\"]');
+        var qtyEl = document.querySelector('.addon-qty[data-addon="' + addon + '"]');
+        var qty = Math.max(0, Number(state.addons[addon]) || 0);
         var wrap = ck.closest('.addon-item');
+
+        ck.checked = qty > 0;
+
         if (!qtyEl) return;
-        if (ck.checked) {
+        if (qty > 0) {
           qtyEl.disabled = false;
-          if (Number(qtyEl.value) < 1) qtyEl.value = '1';
+          qtyEl.value = String(qty);
           if (wrap) wrap.classList.remove('addon-off');
         } else {
           qtyEl.disabled = true;
@@ -399,133 +571,157 @@
       });
     };
 
-    var showStep = function (step) {
-      currentStep = step;
-      stageEls.forEach(function (el) {
-        var n = Number(el.getAttribute('data-stage'));
-        el.classList.toggle('active', n === step);
+    var syncStateFromForm = function () {
+      state.guestDetails = {
+        title: titleEl ? titleEl.value : 'Mr',
+        firstName: firstNameEl ? firstNameEl.value : '',
+        lastName: lastNameEl ? lastNameEl.value : '',
+        phone: phoneEl ? phoneEl.value : '',
+        email: emailEl ? emailEl.value : '',
+        specialRequest: specialReqEl ? specialReqEl.value : ''
+      };
+
+      addonsChecks.forEach(function (ck) {
+        var addon = ck.getAttribute('data-addon');
+        var qtyEl = document.querySelector('.addon-qty[data-addon="' + addon + '"]');
+        if (!addon) return;
+        if (!ck.checked) {
+          state.addons[addon] = 0;
+          if (qtyEl) qtyEl.value = '0';
+          return;
+        }
+        var qty = Math.max(1, Number(qtyEl && qtyEl.value ? qtyEl.value : 1));
+        state.addons[addon] = qty;
+        if (qtyEl) qtyEl.value = String(qty);
       });
-      stepPills.forEach(function (pill) {
-        var n = Number(pill.getAttribute('data-step'));
-        pill.classList.remove('active', 'done', 'locked');
-        if (n === step) pill.classList.add('active');
-        else if (n <= maxUnlockedStep) pill.classList.add('done');
-        else pill.classList.add('locked');
+    };
+
+    var renderBooking = function () {
+      syncStateFromForm();
+      var totals = getBookingTotals(state);
+
+      if (bookingRoomEl) bookingRoomEl.textContent = roomLabels[state.room] || roomLabels.maple;
+      if (bookingDatesEl) bookingDatesEl.textContent = formatDateLabel(state.checkin) + ' to ' + formatDateLabel(state.checkout);
+      if (bookingGuestsEl) bookingGuestsEl.textContent = String(state.guests);
+
+      updateSummaryPanel(state, totals);
+      saveBookingState(state);
+    };
+
+    addonsChecks.forEach(function (ck) {
+      ck.addEventListener('change', function () {
+        var addon = ck.getAttribute('data-addon');
+        var qtyEl = document.querySelector('.addon-qty[data-addon="' + addon + '"]');
+        var wrap = ck.closest('.addon-item');
+
+        if (ck.checked) {
+          if (qtyEl) {
+            qtyEl.disabled = false;
+            if (Number(qtyEl.value) < 1) qtyEl.value = '1';
+          }
+          if (wrap) wrap.classList.remove('addon-off');
+        } else {
+          if (qtyEl) {
+            qtyEl.disabled = true;
+            qtyEl.value = '0';
+          }
+          if (wrap) wrap.classList.add('addon-off');
+        }
+
+        renderBooking();
       });
+    });
+
+    addonsQty.forEach(function (qtyEl) {
+      qtyEl.addEventListener('input', renderBooking);
+      qtyEl.addEventListener('change', renderBooking);
+    });
+
+    [titleEl, firstNameEl, lastNameEl, phoneEl, emailEl, specialReqEl].forEach(function (el) {
+      if (!el) return;
+      el.addEventListener('input', renderBooking);
+      el.addEventListener('change', renderBooking);
+    });
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      syncStateFromForm();
+
+      if (!state.guestDetails.firstName.trim()) { setHint('Enter first name.'); return; }
+      if (!state.guestDetails.lastName.trim()) { setHint('Enter last name.'); return; }
+      if (!state.guestDetails.phone.trim()) { setHint('Enter mobile number.'); return; }
+      if (state.guestDetails.phone.replace(/\D/g, '').length < 8) { setHint('Enter a valid mobile number.'); return; }
+      if (!emailEl || !emailEl.checkValidity()) { setHint('Enter a valid email address.'); return; }
+
       setHint('');
-    };
-
-    var validateStep1 = function () {
-      if (!roomTypeEl || !roomTypeEl.value) { setHint('Select a room to continue.'); return false; }
-      if (!checkinEl.value || !checkoutEl.value) { setHint('Select check-in and check-out dates.'); return false; }
-      var d = parseDates();
-      if (!d.checkin || !d.checkout || d.checkout <= d.checkin) { setHint('Check-out must be after check-in.'); return false; }
-      if (Number(guestsEl.value || 0) < 1) { setHint('Guests must be at least 1.'); return false; }
-      return true;
-    };
-
-    var validateStep2 = function () {
-      if (!firstNameEl.value.trim()) { setHint('Enter first name.'); return false; }
-      if (!lastNameEl.value.trim()) { setHint('Enter last name.'); return false; }
-      if (!phoneEl.value.trim()) { setHint('Enter mobile number.'); return false; }
-      if (phoneEl.value.replace(/\D/g, '').length < 8) { setHint('Enter a valid mobile number.'); return false; }
-      if (!emailEl.value.trim() || !emailEl.checkValidity()) { setHint('Enter a valid email address.'); return false; }
-      return true;
-    };
-
-    if (checkinEl && !checkinEl.value) checkinEl.value = toIso(today);
-    if (checkoutEl && !checkoutEl.value) checkoutEl.value = toIso(tomorrow);
-    updateDateBounds();
-    updateDateDisplays();
-
-    [checkinEl, checkoutEl, roomTypeEl, guestsEl, titleEl, firstNameEl, lastNameEl, emailEl, phoneEl, specialReqEl].forEach(function (el) {
-      if (el) el.addEventListener('input', calc);
-      if (el) el.addEventListener('change', calc);
+      saveBookingState(state);
+      window.location.href = 'payment.html';
     });
 
-    if (checkinDisplay) {
-      checkinDisplay.addEventListener('click', function () {
-        openCalendarFor('checkin');
+    if (backBtn) {
+      backBtn.addEventListener('click', function () {
+        syncStateFromForm();
+        saveBookingState(state);
+        window.location.href = 'rooms.html#stay-planner';
       });
     }
-    if (checkoutDisplay) {
-      checkoutDisplay.addEventListener('click', function () {
-        openCalendarFor('checkout');
-      });
-    }
-    if (calendarPrev) {
-      calendarPrev.addEventListener('click', function () {
-        calendarState.month = new Date(calendarState.month.getFullYear(), calendarState.month.getMonth() - 1, 1);
-        renderCalendar();
-      });
-    }
-    if (calendarNext) {
-      calendarNext.addEventListener('click', function () {
-        calendarState.month = new Date(calendarState.month.getFullYear(), calendarState.month.getMonth() + 1, 1);
-        renderCalendar();
-      });
-    }
-    if (calendarCancel) {
-      calendarCancel.addEventListener('click', closeCalendar);
-    }
-    if (calendarModal) {
-      calendarModal.querySelectorAll('[data-calendar-close]').forEach(function (el) {
-        el.addEventListener('click', closeCalendar);
-      });
-    }
-    document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && calendarModal && !calendarModal.hidden) {
-        closeCalendar();
-      }
-    });
 
-    addonsChecks.forEach(function (el) {
-      el.addEventListener('change', function () {
-        syncAddonState();
-        calc();
-      });
-    });
-    addonsQty.forEach(function (el) { el.addEventListener('input', calc); });
+    applyAddonsToUi();
+    renderBooking();
+  };
 
-    roomPickBtns.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var room = btn.getAttribute('data-room');
-        if (!roomTypeEl || !room) return;
-        roomTypeEl.value = room;
-        maxUnlockedStep = 1;
-        showStep(1);
-        calc();
-      });
-    });
+  var initPaymentPage = function () {
+    var payRoomEl = document.getElementById('payRoom');
+    if (!payRoomEl) return;
 
-    stepPills.forEach(function (pill) {
-      pill.addEventListener('click', function () {
-        var target = Number(pill.getAttribute('data-step'));
-        if (target <= maxUnlockedStep) showStep(target);
-      });
-    });
+    var state = loadBookingState();
+    var totals = getBookingTotals(state);
 
-    if (toStep2Btn) {
-      toStep2Btn.addEventListener('click', function () {
-        if (!validateStep1()) return;
-        maxUnlockedStep = Math.max(maxUnlockedStep, 2);
-        showStep(2);
-      });
+    var payGuestEl = document.getElementById('payGuest');
+    var payDatesEl = document.getElementById('payDates');
+    var payGuestsEl = document.getElementById('payGuests');
+    var payAddonsEl = document.getElementById('payAddons');
+    var payTotalEl = document.getElementById('payTotal');
+    var waBtn = document.getElementById('paymentWhatsAppBtn');
+
+    var fullName = [
+      state.guestDetails.title || '',
+      state.guestDetails.firstName || '',
+      state.guestDetails.lastName || ''
+    ].join(' ').trim();
+
+    if (payGuestEl) payGuestEl.textContent = fullName || '-';
+    payRoomEl.textContent = roomLabels[state.room] || roomLabels.maple;
+    if (payDatesEl) payDatesEl.textContent = formatDateLabel(state.checkin) + ' to ' + formatDateLabel(state.checkout);
+    if (payGuestsEl) payGuestsEl.textContent = String(state.guests);
+    if (payAddonsEl) payAddonsEl.textContent = formatInr(totals.addons);
+    if (payTotalEl) payTotalEl.textContent = formatInr(totals.total);
+
+    updateSummaryPanel(state, totals);
+
+    if (waBtn) {
+      var message =
+        'Hello Omega Residency, please confirm this booking quote.\n' +
+        'Guest: ' + (fullName || '-') + '\n' +
+        'Mobile: ' + (state.guestDetails.phone || '-') + '\n' +
+        'Email: ' + (state.guestDetails.email || '-') + '\n' +
+        'Room: ' + (roomLabels[state.room] || roomLabels.maple) + '\n' +
+        'Check-in: ' + (state.checkin || '-') + '\n' +
+        'Check-out: ' + (state.checkout || '-') + '\n' +
+        'Guests: ' + String(state.guests) + '\n' +
+        'Nights: ' + String(totals.nights) + '\n' +
+        'Base: ' + formatInr(totals.base) + '\n' +
+        'Add-ons: ' + formatInr(totals.addons) + ' (' + getAddonBreakdown(state.addons) + ')\n' +
+        'Total: ' + formatInr(totals.total) + '\n' +
+        'Special Requests: ' + (state.guestDetails.specialRequest || '-');
+
+      waBtn.href = 'https://wa.me/918509307438?text=' + encodeURIComponent(message);
     }
-    if (toStep3Btn) {
-      toStep3Btn.addEventListener('click', function () {
-        if (!validateStep2()) return;
-        maxUnlockedStep = Math.max(maxUnlockedStep, 3);
-        calc();
-        updateConfirmation();
-        showStep(3);
-      });
-    }
-    if (backToStep1Btn) backToStep1Btn.addEventListener('click', function () { showStep(1); });
-    if (backToStep2Btn) backToStep2Btn.addEventListener('click', function () { showStep(2); });
 
-    syncAddonState();
-    calc();
-    showStep(1);
-  }
+    saveBookingState(state);
+  };
+
+  if (page === 'rooms') initRoomsPage();
+  if (page === 'booking') initBookingPage();
+  if (page === 'payment') initPaymentPage();
 })();
