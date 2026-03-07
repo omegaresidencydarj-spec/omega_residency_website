@@ -2,9 +2,21 @@
   var BOOKING_STORAGE_KEY = 'omega_booking_draft_v1';
 
   var roomLabels = {
-    maple: 'Maple Deluxe (E/P Plan)',
-    olive: 'Olive Suite (E/P Plan)',
-    pine: 'Pine Suite (E/P Plan)'
+    maple: 'Maple Deluxe',
+    olive: 'Olive Suite',
+    pine: 'Pine Suite'
+  };
+
+  var planLabels = {
+    ep: 'EP (Room only)',
+    cp: 'CP (Breakfast included)',
+    map: 'MAP (Breakfast + lunch/dinner)'
+  };
+
+  var planMultipliers = {
+    ep: 1,
+    cp: 1.05,
+    map: 1.18
   };
 
   var tariffFallback = { maple: 7000, olive: 10000, pine: 10000 };
@@ -123,6 +135,14 @@
     return m + '-' + day;
   };
 
+  var getPlanKey = function (plan) {
+    return planLabels[plan] ? plan : 'ep';
+  };
+
+  var getPlanLabel = function (plan) {
+    return planLabels[getPlanKey(plan)];
+  };
+
   var isInSeason = function (key, from, to) {
     if (from <= to) return key >= from && key <= to;
     return key >= from || key <= to;
@@ -149,6 +169,7 @@
     var tomorrow = addDays(today, 1);
     return {
       room: 'maple',
+      plan: 'ep',
       checkin: toIso(today),
       checkout: toIso(tomorrow),
       guests: 2,
@@ -175,6 +196,7 @@
     var defaults = getDefaultState();
     var state = raw && typeof raw === 'object' ? raw : {};
     var room = roomLabels[state.room] ? state.room : defaults.room;
+    var plan = getPlanKey(state.plan);
 
     var checkinDate = fromIso(state.checkin) || fromIso(defaults.checkin);
     var checkoutDate = fromIso(state.checkout) || addDays(checkinDate, 1);
@@ -185,6 +207,7 @@
 
     return {
       room: room,
+      plan: plan,
       checkin: toIso(checkinDate),
       checkout: toIso(checkoutDate),
       guests: clampGuests(state.guests),
@@ -202,7 +225,7 @@
         hot_bag: Math.max(0, Number(addons.hot_bag) || 0),
         bed_blanket: Math.max(0, Number(addons.bed_blanket) || 0),
         combo: Math.max(0, Number(addons.combo) || 0),
-        meals: Math.max(0, Number(addons.meals) || 0)
+        meals: plan === 'ep' ? Math.max(0, Number(addons.meals) || 0) : 0
       }
     };
   };
@@ -268,23 +291,29 @@
 
   var getBookingTotals = function (state) {
     var stay = getStayBase(state.room, state.checkin, state.checkout, state.guests);
+    var plan = getPlanKey(state.plan);
+    var planMultiplier = planMultipliers[plan] || 1;
+    var planAdjustedBase = Math.round(stay.base * planMultiplier);
     var addonsTotal = getAddonsTotal(state.addons, state.guests, stay.nights);
     return {
+      plan: plan,
       nights: stay.nights,
-      base: stay.base,
+      base: planAdjustedBase,
       addons: addonsTotal,
-      total: stay.base + addonsTotal
+      total: planAdjustedBase + addonsTotal
     };
   };
 
   var updateSummaryPanel = function (state, totals) {
     var sumRoom = document.getElementById('sumRoom');
+    var sumPlan = document.getElementById('sumPlan');
     var sumNights = document.getElementById('sumNights');
     var sumBase = document.getElementById('sumBase');
     var sumAddons = document.getElementById('sumAddons');
     var sumTotal = document.getElementById('sumTotal');
 
     if (sumRoom) sumRoom.textContent = roomLabels[state.room] || roomLabels.maple;
+    if (sumPlan) sumPlan.textContent = getPlanLabel(state.plan);
     if (sumNights) sumNights.textContent = String(totals.nights);
     if (sumBase) sumBase.textContent = formatInr(totals.base);
     if (sumAddons) sumAddons.textContent = formatInr(totals.addons);
@@ -360,13 +389,13 @@
 
         if (stay.nights < 1) {
           valueEl.textContent = formatInr(tariffFallback[room] || 0);
-          if (labelEl) labelEl.textContent = 'From';
+          if (labelEl) labelEl.textContent = 'From (EP)';
           if (noteEl) noteEl.textContent = '1 night · 2 guests';
           return;
         }
 
         valueEl.textContent = formatInr(stay.base);
-        if (labelEl) labelEl.textContent = 'Selected stay';
+        if (labelEl) labelEl.textContent = 'Selected stay (EP)';
         if (noteEl) {
           var nightText = stay.nights === 1 ? '1 night' : String(stay.nights) + ' nights';
           var guestText = state.guests === 1 ? '1 guest' : String(state.guests) + ' guests';
@@ -508,6 +537,7 @@
         renderRooms();
         var room = btn.getAttribute('data-room');
         if (roomLabels[room]) state.room = room;
+        state.plan = 'ep';
         saveBookingState(state);
         window.location.href = 'booking.html';
       });
@@ -528,10 +558,12 @@
     var phoneEl = document.getElementById('guestPhone');
     var emailEl = document.getElementById('guestEmail');
     var specialReqEl = document.getElementById('specialRequest');
+    var planEl = document.getElementById('mealPlanSelect');
     var hintEl = document.getElementById('bookingHint');
     var backBtn = document.getElementById('backToRoomsBtn');
 
     var bookingRoomEl = document.getElementById('bookingRoom');
+    var bookingPlanEl = document.getElementById('bookingPlan');
     var bookingDatesEl = document.getElementById('bookingDates');
     var bookingGuestsEl = document.getElementById('bookingGuests');
 
@@ -548,13 +580,36 @@
     if (phoneEl) phoneEl.value = state.guestDetails.phone || '';
     if (emailEl) emailEl.value = state.guestDetails.email || '';
     if (specialReqEl) specialReqEl.value = state.guestDetails.specialRequest || '';
+    if (planEl) planEl.value = getPlanKey(state.plan);
 
     var applyAddonsToUi = function () {
+      var mealsAllowed = getPlanKey(state.plan) === 'ep';
+
       addonsChecks.forEach(function (ck) {
         var addon = ck.getAttribute('data-addon');
         var qtyEl = document.querySelector('.addon-qty[data-addon="' + addon + '"]');
         var qty = Math.max(0, Number(state.addons[addon]) || 0);
         var wrap = ck.closest('.addon-item');
+
+        if (addon === 'meals' && !mealsAllowed) {
+          state.addons.meals = 0;
+          ck.checked = false;
+          ck.disabled = true;
+          if (qtyEl) {
+            qtyEl.disabled = true;
+            qtyEl.value = '0';
+          }
+          if (wrap) {
+            wrap.classList.add('addon-off');
+            wrap.classList.add('addon-hidden');
+          }
+          return;
+        }
+
+        if (addon === 'meals') {
+          ck.disabled = false;
+          if (wrap) wrap.classList.remove('addon-hidden');
+        }
 
         ck.checked = qty > 0;
 
@@ -572,6 +627,8 @@
     };
 
     var syncStateFromForm = function () {
+      state.plan = getPlanKey(planEl ? planEl.value : state.plan);
+
       state.guestDetails = {
         title: titleEl ? titleEl.value : 'Mr',
         firstName: firstNameEl ? firstNameEl.value : '',
@@ -585,6 +642,11 @@
         var addon = ck.getAttribute('data-addon');
         var qtyEl = document.querySelector('.addon-qty[data-addon="' + addon + '"]');
         if (!addon) return;
+        if (addon === 'meals' && state.plan !== 'ep') {
+          state.addons.meals = 0;
+          if (qtyEl) qtyEl.value = '0';
+          return;
+        }
         if (!ck.checked) {
           state.addons[addon] = 0;
           if (qtyEl) qtyEl.value = '0';
@@ -598,9 +660,11 @@
 
     var renderBooking = function () {
       syncStateFromForm();
+      applyAddonsToUi();
       var totals = getBookingTotals(state);
 
       if (bookingRoomEl) bookingRoomEl.textContent = roomLabels[state.room] || roomLabels.maple;
+      if (bookingPlanEl) bookingPlanEl.textContent = getPlanLabel(state.plan);
       if (bookingDatesEl) bookingDatesEl.textContent = formatDateLabel(state.checkin) + ' to ' + formatDateLabel(state.checkout);
       if (bookingGuestsEl) bookingGuestsEl.textContent = String(state.guests);
 
@@ -637,7 +701,7 @@
       qtyEl.addEventListener('change', renderBooking);
     });
 
-    [titleEl, firstNameEl, lastNameEl, phoneEl, emailEl, specialReqEl].forEach(function (el) {
+    [planEl, titleEl, firstNameEl, lastNameEl, phoneEl, emailEl, specialReqEl].forEach(function (el) {
       if (!el) return;
       el.addEventListener('input', renderBooking);
       el.addEventListener('change', renderBooking);
@@ -680,6 +744,7 @@
     var payGuestEl = document.getElementById('payGuest');
     var payDatesEl = document.getElementById('payDates');
     var payGuestsEl = document.getElementById('payGuests');
+    var payPlanEl = document.getElementById('payPlan');
     var payAddonsEl = document.getElementById('payAddons');
     var payTotalEl = document.getElementById('payTotal');
     var waBtn = document.getElementById('paymentWhatsAppBtn');
@@ -694,6 +759,7 @@
     payRoomEl.textContent = roomLabels[state.room] || roomLabels.maple;
     if (payDatesEl) payDatesEl.textContent = formatDateLabel(state.checkin) + ' to ' + formatDateLabel(state.checkout);
     if (payGuestsEl) payGuestsEl.textContent = String(state.guests);
+    if (payPlanEl) payPlanEl.textContent = getPlanLabel(state.plan);
     if (payAddonsEl) payAddonsEl.textContent = formatInr(totals.addons);
     if (payTotalEl) payTotalEl.textContent = formatInr(totals.total);
 
@@ -706,6 +772,7 @@
         'Mobile: ' + (state.guestDetails.phone || '-') + '\n' +
         'Email: ' + (state.guestDetails.email || '-') + '\n' +
         'Room: ' + (roomLabels[state.room] || roomLabels.maple) + '\n' +
+        'Meal Plan: ' + getPlanLabel(state.plan) + '\n' +
         'Check-in: ' + (state.checkin || '-') + '\n' +
         'Check-out: ' + (state.checkout || '-') + '\n' +
         'Guests: ' + String(state.guests) + '\n' +

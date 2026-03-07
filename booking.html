@@ -38,8 +38,19 @@
           <p class="lead booking-sublead">Complete guest details below. You can go back to edit dates and guests anytime.</p>
           <div class="confirm-box booking-snapshot" style="margin-top:0.95rem;">
             <div class="summary-row"><span class="summary-muted">Room</span><span id="bookingRoom">-</span></div>
+            <div class="summary-row"><span class="summary-muted">Meal Plan</span><span id="bookingPlan">EP (Room only)</span></div>
             <div class="summary-row"><span class="summary-muted">Stay</span><span id="bookingDates">-</span></div>
             <div class="summary-row"><span class="summary-muted">Guests</span><span id="bookingGuests">-</span></div>
+          </div>
+          <div class="booking-form-grid meal-plan-grid">
+            <div class="full">
+              <label for="mealPlanSelect">Meal Plan</label>
+              <select id="mealPlanSelect" name="mealPlanSelect">
+                <option value="ep">EP (Room only)</option>
+                <option value="cp">CP (Breakfast included) +5%</option>
+                <option value="map">MAP (Breakfast + lunch/dinner) +18%</option>
+              </select>
+            </div>
           </div>
           <p class="booking-hint" id="bookingHint" aria-live="polite"></p>
 
@@ -99,15 +110,17 @@
             </div>
             <div class="summary-body">
               <div class="summary-row"><span class="summary-muted">Room</span><span id="sumRoom">-</span></div>
+              <div class="summary-row"><span class="summary-muted">Meal Plan</span><span id="sumPlan">EP (Room only)</span></div>
               <div class="summary-row"><span class="summary-muted">Nights</span><span id="sumNights">0</span></div>
               <div class="summary-row"><span class="summary-muted">Base Rate</span><span id="sumBase">₹0</span></div>
               <div class="summary-row"><span class="summary-muted">Add-ons</span><span id="sumAddons">₹0</span></div>
               <div class="summary-row summary-total"><strong>Total</strong><strong id="sumTotal">₹0</strong></div>
+              <p class="summary-tax-note">All displayed prices are inclusive of GST.</p>
             </div>
           </div>
           <div class="panel">
             <h3 style="font-size:1.35rem;">Cancellation Policy</h3>
-            <p class="lead" style="font-size:0.98rem;">Free cancellation up to 3 days before check-in. After that, 1-night charge may apply plus taxes.</p>
+            <p class="lead" style="font-size:0.98rem;">Free cancellation up to 3 days before check-in. After that, a 1-night charge may apply.</p>
           </div>
         </aside>
       </div>
