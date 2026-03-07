@@ -807,7 +807,7 @@
 
     if (stripeBtn) {
       var defaultPayHref = stripeBtn.getAttribute('href') || '';
-      var defaultPayLabel = stripeBtn.textContent || 'Proceed to Stripe';
+      var defaultPayLabel = stripeBtn.textContent || 'Proceed to Pay';
 
       stripeBtn.addEventListener('click', function (event) {
         event.preventDefault();
