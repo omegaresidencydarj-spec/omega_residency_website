@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Omega Residency | Payment Confirmed</title>
+  <meta name="description" content="Payment confirmed for your Omega Residency booking." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="page">
+    <section class="container" style="max-width:760px;">
+      <article class="panel" style="display:grid; gap:1rem;">
+        <span class="eyebrow">Payment Confirmed</span>
+        <h1>Your booking is confirmed.</h1>
+        <p class="lead" id="successLead">We are preparing your confirmation details.</p>
+        <div class="confirm-box" style="display:grid; gap:0.6rem;">
+          <div class="summary-row"><span class="summary-muted">Booking Ref</span><span id="okRef">-</span></div>
+          <div class="summary-row"><span class="summary-muted">Guest</span><span id="okGuest">-</span></div>
+          <div class="summary-row"><span class="summary-muted">Room</span><span id="okRoom">-</span></div>
+          <div class="summary-row"><span class="summary-muted">Meal Plan</span><span id="okPlan">-</span></div>
+          <div class="summary-row"><span class="summary-muted">Stay</span><span id="okStay">-</span></div>
+          <div class="summary-row summary-total"><strong>Total Paid</strong><strong id="okTotal">₹0</strong></div>
+        </div>
+        <div class="stage-actions">
+          <a class="btn" id="okCalendarBtn" href="#" target="_blank" rel="noopener noreferrer">Add Booking To Calendar</a>
+          <a class="btn-secondary" href="index.html">Back to Home</a>
+        </div>
+        <p class="summary-tax-note">A confirmation email has been sent to the traveler and the hotel.</p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var sessionId = params.get('session_id');
+      var lead = document.getElementById('successLead');
+      var calendarBtn = document.getElementById('okCalendarBtn');
+
+      if (!sessionId) {
+        if (lead) lead.textContent = 'Confirmation ID missing. Please contact the hotel.';
+        if (calendarBtn) calendarBtn.style.display = 'none';
+        return;
+      }
+
+      window.fetch('/api/checkout-confirmation?session_id=' + encodeURIComponent(sessionId))
+        .then(function (response) {
+          if (!response.ok) throw new Error('Unable to fetch confirmation');
+          return response.json();
+        })
+        .then(function (data) {
+          var ref = document.getElementById('okRef');
+          var guest = document.getElementById('okGuest');
+          var room = document.getElementById('okRoom');
+          var plan = document.getElementById('okPlan');
+          var stay = document.getElementById('okStay');
+          var total = document.getElementById('okTotal');
+
+          if (lead) lead.textContent = 'Your booking is fully paid and confirmed.';
+          if (ref) ref.textContent = data.bookingRef || '-';
+          if (guest) guest.textContent = data.guestName || '-';
+          if (room) room.textContent = data.room || '-';
+          if (plan) plan.textContent = data.plan || '-';
+          if (stay) stay.textContent = (data.checkin || '-') + ' to ' + (data.checkout || '-');
+          if (total) total.textContent = '₹' + Number(data.totalInr || 0).toLocaleString('en-IN');
+
+          if (calendarBtn && data.calendarUrl) {
+            calendarBtn.href = data.calendarUrl;
+          } else if (calendarBtn) {
+            calendarBtn.style.display = 'none';
+          }
+        })
+        .catch(function () {
+          if (lead) lead.textContent = 'Payment is complete, but live confirmation details are unavailable right now.';
+        });
+    })();
+  </script>
+</body>
+</html>

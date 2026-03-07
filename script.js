@@ -747,6 +747,7 @@
     var payPlanEl = document.getElementById('payPlan');
     var payAddonsEl = document.getElementById('payAddons');
     var payTotalEl = document.getElementById('payTotal');
+    var stripeBtn = document.getElementById('stripePayBtn');
     var waBtn = document.getElementById('paymentWhatsAppBtn');
 
     var fullName = [
@@ -783,6 +784,66 @@
         'Special Requests: ' + (state.guestDetails.specialRequest || '-');
 
       waBtn.href = 'https://wa.me/918509307438?text=' + encodeURIComponent(message);
+    }
+
+    var paymentPayload = function () {
+      return {
+        guestName: fullName || '',
+        guestEmail: state.guestDetails.email || '',
+        guestPhone: state.guestDetails.phone || '',
+        room: roomLabels[state.room] || roomLabels.maple,
+        plan: getPlanLabel(state.plan),
+        checkin: state.checkin || '',
+        checkout: state.checkout || '',
+        guests: state.guests,
+        nights: totals.nights,
+        baseRateInr: totals.base,
+        addonsInr: totals.addons,
+        totalInr: totals.total,
+        addonsText: getAddonBreakdown(state.addons),
+        specialRequest: state.guestDetails.specialRequest || ''
+      };
+    };
+
+    if (stripeBtn) {
+      var defaultPayHref = stripeBtn.getAttribute('href') || '';
+      var defaultPayLabel = stripeBtn.textContent || 'Proceed to Stripe';
+
+      stripeBtn.addEventListener('click', function (event) {
+        event.preventDefault();
+
+        if (!state.guestDetails.email || !state.guestDetails.email.trim()) {
+          window.alert('Please add guest email in Personal Details before payment.');
+          window.location.href = 'booking.html';
+          return;
+        }
+
+        stripeBtn.setAttribute('aria-disabled', 'true');
+        stripeBtn.textContent = 'Redirecting...';
+
+        window.fetch('/api/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(paymentPayload())
+        }).then(function (response) {
+          return response.json().catch(function () { return {}; }).then(function (data) {
+            if (!response.ok) throw new Error(data.error || 'Failed to create checkout session');
+            return data;
+          });
+        }).then(function (data) {
+          if (!data || !data.url) throw new Error('Invalid checkout session response');
+          window.location.href = data.url;
+        }).catch(function (err) {
+          var hasConfiguredFallback = defaultPayHref && defaultPayHref.indexOf('your-payment-link') === -1;
+          if (hasConfiguredFallback) {
+            window.location.href = defaultPayHref;
+            return;
+          }
+          window.alert(err && err.message ? err.message : 'Payment setup is incomplete. Please contact the hotel to complete this booking.');
+          stripeBtn.removeAttribute('aria-disabled');
+          stripeBtn.textContent = defaultPayLabel;
+        });
+      });
     }
 
     saveBookingState(state);
