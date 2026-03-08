@@ -779,6 +779,22 @@
     var payRoomEl = document.getElementById('payRoom');
     if (!payRoomEl) return;
 
+    var resolveApiBase = function () {
+      var fromConfig = window.OMEGA_CONFIG && typeof window.OMEGA_CONFIG.API_BASE_URL === 'string'
+        ? window.OMEGA_CONFIG.API_BASE_URL
+        : '';
+      var fromBody = document.body && document.body.getAttribute('data-api-base')
+        ? document.body.getAttribute('data-api-base')
+        : '';
+      return String(fromConfig || fromBody || '').trim().replace(/\/+$/, '');
+    };
+
+    var apiBase = resolveApiBase();
+    var isGithubPages = /\.github\.io$/i.test(window.location.hostname || '');
+    var apiUrl = function (path) {
+      return (apiBase || '') + path;
+    };
+
     var state = loadBookingState();
     var totals = getBookingTotals(state);
 
@@ -861,7 +877,7 @@
       };
 
       var verifyRazorpayPayment = function (razorpayResponse) {
-        return window.fetch('/api/razorpay/verify-payment', {
+        return window.fetch(apiUrl('/api/razorpay/verify-payment'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -896,9 +912,14 @@
           return;
         }
 
+        if (isGithubPages && !apiBase) {
+          window.alert('Set your backend API URL in config.js (OMEGA_CONFIG.API_BASE_URL) before paying from GitHub Pages.');
+          return;
+        }
+
         setPayBusy('Preparing payment...');
 
-        window.fetch('/api/create-razorpay-order', {
+        window.fetch(apiUrl('/api/create-razorpay-order'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(paymentPayload())
@@ -956,7 +977,9 @@
         }).catch(function (err) {
           var message = err && err.message ? err.message : 'Payment setup is incomplete. Please contact the hotel to complete this booking.';
           if (message === 'Failed to fetch') {
-            message = 'Could not reach payment server. Run "npm start" and open the site from http://localhost:3000 (not file://).';
+            message = apiBase
+              ? 'Could not reach payment server. Check backend URL/CORS and ensure the API is live.'
+              : 'Could not reach payment server. Run "npm start" and open the site from http://localhost:3000 (not file://), or set API_BASE_URL in config.js for GitHub Pages.';
           }
           window.alert(message);
           resetPayBtn();

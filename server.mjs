@@ -17,6 +17,10 @@ const PORT = Number(process.env.PORT || 3000);
 const APP_BASE_URL = String(process.env.APP_BASE_URL || `http://localhost:${PORT}`).replace(/\/+$/, '');
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || '';
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
+const ALLOWED_ORIGINS = String(process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
 const CALENDAR_TOKEN_SECRET = process.env.CALENDAR_TOKEN_SECRET || 'replace-me-in-production';
 const EMAIL_FROM = process.env.EMAIL_FROM || '';
 const HOTEL_EMAIL = process.env.HOTEL_EMAIL || '';
@@ -372,6 +376,37 @@ const toConfirmationPayload = (booking, calendarLinks) => ({
   calendarUrl: calendarLinks.smartUrl
 });
 
+const isOriginAllowed = (originHeader) => {
+  if (!originHeader) return true;
+  const origin = String(originHeader).trim().replace(/\/+$/, '');
+  if (!ALLOWED_ORIGINS.length) return true;
+  return ALLOWED_ORIGINS.includes(origin);
+};
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin ? String(req.headers.origin).trim().replace(/\/+$/, '') : '';
+  const allowed = isOriginAllowed(origin);
+
+  if (origin && allowed) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
+  if (allowed) {
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(allowed ? 204 : 403);
+  }
+
+  if (origin && !allowed && req.path.startsWith('/api/')) {
+    return res.status(403).json({ error: 'Origin not allowed.' });
+  }
+
+  return next();
+});
+
 app.use(express.json({ limit: '1mb' }));
 
 const safeEqual = (a, b) => {
@@ -619,6 +654,7 @@ app.get('/health', (req, res) => {
     ok: true,
     razorpayConfigured: razorpayReady,
     smtpConfigured: Boolean(mailer),
+    allowedOrigins: ALLOWED_ORIGINS,
     appBaseUrl: APP_BASE_URL
   });
 });

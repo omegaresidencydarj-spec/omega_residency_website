@@ -7,7 +7,7 @@
   <meta name="description" content="Payment confirmed for your Omega Residency booking." />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body data-api-base="">
   <main class="page">
     <section class="container" style="max-width:760px;">
       <article class="panel" style="display:grid; gap:1rem;">
@@ -31,6 +31,7 @@
     </section>
   </main>
 
+  <script src="config.js"></script>
   <script>
     (function () {
       var params = new URLSearchParams(window.location.search);
@@ -38,6 +39,12 @@
       var lead = document.getElementById('successLead');
       var calendarBtn = document.getElementById('okCalendarBtn');
       var cacheKey = 'omega_payment_confirmation_v1';
+      var apiBase = String(
+        (window.OMEGA_CONFIG && window.OMEGA_CONFIG.API_BASE_URL) ||
+        document.body.getAttribute('data-api-base') ||
+        ''
+      ).trim().replace(/\/+$/, '');
+      var apiUrl = function (path) { return (apiBase || '') + path; };
 
       var renderConfirmation = function (data) {
         var ref = document.getElementById('okRef');
@@ -81,7 +88,7 @@
         return;
       }
 
-      window.fetch('/api/razorpay/confirmation?payment_id=' + encodeURIComponent(paymentId))
+      window.fetch(apiUrl('/api/razorpay/confirmation?payment_id=' + encodeURIComponent(paymentId)))
         .then(function (response) {
           if (!response.ok) throw new Error('Unable to fetch confirmation');
           return response.json();
