@@ -216,11 +216,12 @@ a { color: inherit; text-decoration: none; }
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.55s ease;
+  will-change: opacity;
 }
 
 .hero-media img.swap-fade {
-  opacity: 0.22;
+  opacity: 0.5;
 }
 
 .hero-content { padding: 1.5rem; }
@@ -278,11 +279,12 @@ h2 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.7rem, 4v
   width: 100%;
   height: 220px;
   object-fit: cover;
-  transition: opacity 0.35s ease;
+  transition: opacity 0.5s ease;
+  will-change: opacity;
 }
 
 .gallery-item img.swap-fade {
-  opacity: 0.22;
+  opacity: 0.58;
 }
 
 .gallery-item span {

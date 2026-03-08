@@ -80,18 +80,49 @@
   });
 
   if (page === 'home' || page === 'about') {
+    var imageCache = {};
+    var preloadImage = function (src) {
+      if (!src) return Promise.resolve(false);
+      if (imageCache[src]) return imageCache[src];
+      imageCache[src] = new Promise(function (resolve) {
+        var temp = new Image();
+        temp.onload = function () { resolve(true); };
+        temp.onerror = function () { resolve(false); };
+        temp.src = src;
+      });
+      return imageCache[src];
+    };
+
     var rotateImage = function (img, imageList, altList, intervalMs) {
       var index = 0;
+      var inFlight = false;
       if (!img || imageList.length < 2) return;
 
+      imageList.forEach(function (src) {
+        preloadImage(src);
+      });
+
       setInterval(function () {
+        if (inFlight) return;
         index = (index + 1) % imageList.length;
-        img.classList.add('swap-fade');
-        window.setTimeout(function () {
-          img.src = imageList[index];
-          img.alt = altList[index] || img.alt;
-          img.classList.remove('swap-fade');
-        }, 180);
+        inFlight = true;
+
+        var nextSrc = imageList[index];
+        var nextAlt = altList[index] || img.alt;
+
+        preloadImage(nextSrc).finally(function () {
+          img.classList.add('swap-fade');
+          window.setTimeout(function () {
+            img.src = nextSrc;
+            img.alt = nextAlt;
+            window.requestAnimationFrame(function () {
+              img.classList.remove('swap-fade');
+              window.setTimeout(function () {
+                inFlight = false;
+              }, 420);
+            });
+          }, 240);
+        });
       }, intervalMs);
     };
 
