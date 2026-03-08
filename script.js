@@ -80,12 +80,8 @@
   });
 
   if (page === 'home' || page === 'about') {
-    document.querySelectorAll('.rotating-card').forEach(function (card) {
-      var img = card.querySelector('img');
-      var imageList = (card.getAttribute('data-images') || '').split('|').filter(Boolean);
-      var altList = (card.getAttribute('data-alts') || '').split('|').filter(Boolean);
+    var rotateImage = function (img, imageList, altList, intervalMs) {
       var index = 0;
-
       if (!img || imageList.length < 2) return;
 
       setInterval(function () {
@@ -96,7 +92,21 @@
           img.alt = altList[index] || img.alt;
           img.classList.remove('swap-fade');
         }, 180);
-      }, 7000);
+      }, intervalMs);
+    };
+
+    var heroImage = document.querySelector('.rotating-hero');
+    if (heroImage) {
+      var heroImages = (heroImage.getAttribute('data-images') || '').split('|').filter(Boolean);
+      var heroAlts = (heroImage.getAttribute('data-alts') || '').split('|').filter(Boolean);
+      rotateImage(heroImage, heroImages, heroAlts, 7000);
+    }
+
+    document.querySelectorAll('.rotating-card').forEach(function (card) {
+      var img = card.querySelector('img');
+      var imageList = (card.getAttribute('data-images') || '').split('|').filter(Boolean);
+      var altList = (card.getAttribute('data-alts') || '').split('|').filter(Boolean);
+      rotateImage(img, imageList, altList, 15000);
     });
   }
 
