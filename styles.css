@@ -280,6 +280,65 @@ body[data-page="gallery"] h1 {
 
 .panel { padding: 1.3rem; }
 
+.loading-shell {
+  min-height: clamp(420px, 72vh, 760px);
+  display: grid;
+  place-items: center;
+}
+
+.loading-card {
+  width: min(560px, 100%);
+  text-align: center;
+  display: grid;
+  gap: 0.72rem;
+  padding: clamp(1rem, 2.8vw, 1.55rem);
+}
+
+.loading-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-self: center;
+  gap: 0.65rem;
+  text-align: left;
+}
+
+.loading-brand .brand-mark {
+  width: 56px;
+  height: 56px;
+  box-shadow: 0 8px 20px rgba(56, 33, 18, 0.15);
+}
+
+.loading-spinner {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  margin: 0.5rem auto 0.15rem;
+  border: 4px solid rgba(139, 94, 60, 0.22);
+  border-top-color: var(--accent-dark);
+  animation: spin 0.9s linear infinite;
+}
+
+.loading-status {
+  margin: 0;
+  font-weight: 700;
+  color: var(--accent-dark);
+  font-size: 1.02rem;
+}
+
+.loading-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.93rem;
+}
+
+.loading-actions {
+  justify-content: center;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .gallery-item {
   border-radius: 18px;
   overflow: hidden;
@@ -1120,6 +1179,13 @@ textarea { min-height: 120px; resize: vertical; }
   textarea,
   select {
     font-size: 16px;
+  }
+  .loading-brand .brand-mark {
+    width: 50px;
+    height: 50px;
+  }
+  .loading-status {
+    font-size: 0.97rem;
   }
 }
 

@@ -1,5 +1,6 @@
 (function () {
   var BOOKING_STORAGE_KEY = 'omega_booking_draft_v1';
+  var PENDING_PAYMENT_KEY = 'omega_pending_payment_payload_v1';
 
   var roomLabels = {
     maple: 'Maple Deluxe',
@@ -791,9 +792,6 @@
 
     var apiBase = resolveApiBase();
     var isGithubPages = /\.github\.io$/i.test(window.location.hostname || '');
-    var apiUrl = function (path) {
-      return (apiBase || '') + path;
-    };
 
     var state = loadBookingState();
     var totals = getBookingTotals(state);
@@ -876,23 +874,6 @@
         payBtn.textContent = defaultPayLabel;
       };
 
-      var verifyRazorpayPayment = function (razorpayResponse) {
-        return window.fetch(apiUrl('/api/razorpay/verify-payment'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            razorpay_order_id: razorpayResponse.razorpay_order_id,
-            razorpay_payment_id: razorpayResponse.razorpay_payment_id,
-            razorpay_signature: razorpayResponse.razorpay_signature
-          })
-        }).then(function (response) {
-          return response.json().catch(function () { return {}; }).then(function (data) {
-            if (!response.ok) throw new Error(data.error || 'Payment verification failed');
-            return data;
-          });
-        });
-      };
-
       payBtn.addEventListener('click', function (event) {
         event.preventDefault();
 
@@ -907,11 +888,6 @@
           return;
         }
 
-        if (typeof window.Razorpay !== 'function') {
-          window.alert('Razorpay Checkout failed to load. Please refresh and try again.');
-          return;
-        }
-
         if (isGithubPages && !apiBase) {
           window.alert('Set your backend API URL in config.js (OMEGA_CONFIG.API_BASE_URL) before paying from GitHub Pages.');
           return;
@@ -919,71 +895,21 @@
 
         setPayBusy('Preparing payment...');
 
-        window.fetch(apiUrl('/api/create-razorpay-order'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(paymentPayload())
-        }).then(function (response) {
-          return response.json().catch(function () { return {}; }).then(function (data) {
-            if (!response.ok) throw new Error(data.error || 'Failed to create payment order');
-            return data;
-          });
-        }).then(function (orderData) {
-          var checkoutKey = (orderData && orderData.keyId) || configuredPublicKey;
-          if (!orderData || !orderData.orderId || !checkoutKey) {
-            throw new Error('Invalid payment order response');
-          }
-
-          var razorpay = new window.Razorpay({
-            key: checkoutKey,
-            order_id: orderData.orderId,
-            amount: orderData.amount,
-            currency: orderData.currency || 'INR',
-            name: orderData.name || 'Omega Residency',
-            description: orderData.description || 'Booking Payment',
-            prefill: orderData.prefill || {},
-            theme: { color: '#8b5e3c' },
-            modal: {
-              ondismiss: function () {
-                resetPayBtn();
-              }
-            },
-            handler: function (razorpayResponse) {
-              setPayBusy('Verifying payment...');
-              verifyRazorpayPayment(razorpayResponse).then(function (confirmation) {
-                try {
-                  window.sessionStorage.setItem('omega_payment_confirmation_v1', JSON.stringify(confirmation));
-                } catch (_) {}
-                var paymentId = confirmation && confirmation.paymentId
-                  ? confirmation.paymentId
-                  : razorpayResponse.razorpay_payment_id;
-                window.location.href = 'payment-success.html?payment_id=' + encodeURIComponent(paymentId);
-              }).catch(function (err) {
-                window.alert(err && err.message ? err.message : 'Payment verification failed. Please contact the hotel.');
-                resetPayBtn();
-              });
-            }
-          });
-
-          razorpay.on('payment.failed', function (response) {
-            var reason = response && response.error && response.error.description
-              ? response.error.description
-              : 'Payment failed. Please try again.';
-            window.alert(reason);
-            resetPayBtn();
-          });
-
-          razorpay.open();
-        }).catch(function (err) {
-          var message = err && err.message ? err.message : 'Payment setup is incomplete. Please contact the hotel to complete this booking.';
-          if (message === 'Failed to fetch') {
-            message = apiBase
-              ? 'Could not reach payment server. Check backend URL/CORS and ensure the API is live.'
-              : 'Could not reach payment server. Run "npm start" and open the site from http://localhost:3000 (not file://), or set API_BASE_URL in config.js for GitHub Pages.';
-          }
-          window.alert(message);
+        try {
+          var pending = {
+            apiBase: apiBase,
+            payload: paymentPayload(),
+            publicKey: configuredPublicKey,
+            createdAt: Date.now()
+          };
+          window.sessionStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(pending));
+        } catch (_) {
+          window.alert('Could not prepare payment session. Please try again.');
           resetPayBtn();
-        });
+          return;
+        }
+
+        window.location.href = 'payment-loading.html';
       });
     }
 

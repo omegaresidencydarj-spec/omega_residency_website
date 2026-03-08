@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Omega Residency | Secure Checkout</title>
+  <meta name="description" content="Preparing secure payment checkout for your Omega Residency booking." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-api-base="">
+  <main class="page">
+    <section class="container loading-shell">
+      <article class="panel loading-card">
+        <div class="loading-brand">
+          <div class="brand-mark"><img src="Images/OMEGA_LOGO-removebg.png" alt="Omega Residency logo" /></div>
+          <div class="brand-copy"><strong>Omega Residency</strong><span>Boutique Hotel · Darjeeling</span></div>
+        </div>
+        <span class="eyebrow">Secure Checkout</span>
+        <h1>Connecting to payment gateway</h1>
+        <p class="lead">Please wait while we prepare your secure payment.</p>
+
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <p class="loading-status" id="loadingStatus" role="status" aria-live="polite">Initializing checkout...</p>
+        <p class="loading-note" id="loadingNote">Do not close this page.</p>
+
+        <div class="stage-actions loading-actions" id="loadingActions" hidden>
+          <button type="button" class="btn" id="retryPaymentBtn">Try Again</button>
+          <a class="btn-secondary" href="payment.html">Back to Payment</a>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    (function () {
+      var PENDING_PAYMENT_KEY = 'omega_pending_payment_payload_v1';
+      var CONFIRMATION_KEY = 'omega_payment_confirmation_v1';
+      var statusEl = document.getElementById('loadingStatus');
+      var noteEl = document.getElementById('loadingNote');
+      var actionsEl = document.getElementById('loadingActions');
+      var retryBtn = document.getElementById('retryPaymentBtn');
+
+      var setStatus = function (text) {
+        if (statusEl) statusEl.textContent = text || '';
+      };
+
+      var setNote = function (text) {
+        if (noteEl) noteEl.textContent = text || '';
+      };
+
+      var showActions = function () {
+        if (actionsEl) actionsEl.hidden = false;
+      };
+
+      var hideActions = function () {
+        if (actionsEl) actionsEl.hidden = true;
+      };
+
+      var resolveApiBase = function (pending) {
+        var fromPending = pending && typeof pending.apiBase === 'string' ? pending.apiBase : '';
+        var fromConfig = window.OMEGA_CONFIG && typeof window.OMEGA_CONFIG.API_BASE_URL === 'string'
+          ? window.OMEGA_CONFIG.API_BASE_URL
+          : '';
+        var fromBody = document.body && document.body.getAttribute('data-api-base')
+          ? document.body.getAttribute('data-api-base')
+          : '';
+        return String(fromPending || fromConfig || fromBody || '').trim().replace(/\/+$/, '');
+      };
+
+      var getPendingPayload = function () {
+        try {
+          var raw = window.sessionStorage.getItem(PENDING_PAYMENT_KEY);
+          if (!raw) return null;
+          var parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== 'object') return null;
+          if (!parsed.payload || typeof parsed.payload !== 'object') return null;
+          return parsed;
+        } catch (_) {
+          return null;
+        }
+      };
+
+      var renderFailure = function (message) {
+        setStatus(message || 'Could not start payment.');
+        setNote('Please return and try again.');
+        showActions();
+      };
+
+      var startCheckout = function () {
+        hideActions();
+
+        if (window.location.protocol === 'file:') {
+          renderFailure('Payment requires a server URL. Open via http(s), not file://.');
+          return;
+        }
+
+        if (typeof window.Razorpay !== 'function') {
+          renderFailure('Razorpay SDK failed to load. Please refresh and try again.');
+          return;
+        }
+
+        var pending = getPendingPayload();
+        if (!pending) {
+          renderFailure('Booking session expired. Please go back to Payment page.');
+          return;
+        }
+
+        var apiBase = resolveApiBase(pending);
+        if (!apiBase) {
+          renderFailure('Payment backend URL is missing. Update config.js and retry.');
+          return;
+        }
+
+        var apiUrl = function (path) { return apiBase + path; };
+
+        setStatus('Creating secure payment session...');
+        setNote('You will see the Razorpay window in a moment.');
+
+        window.fetch(apiUrl('/api/create-razorpay-order'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(pending.payload)
+        }).then(function (response) {
+          return response.json().catch(function () { return {}; }).then(function (data) {
+            if (!response.ok) throw new Error(data.error || 'Failed to create payment order');
+            return data;
+          });
+        }).then(function (orderData) {
+          var checkoutKey = (orderData && orderData.keyId) || pending.publicKey || '';
+          if (!orderData || !orderData.orderId || !checkoutKey) {
+            throw new Error('Invalid payment order response');
+          }
+
+          setStatus('Opening payment gateway...');
+
+          var razorpay = new window.Razorpay({
+            key: checkoutKey,
+            order_id: orderData.orderId,
+            amount: orderData.amount,
+            currency: orderData.currency || 'INR',
+            name: orderData.name || 'Omega Residency',
+            description: orderData.description || 'Booking Payment',
+            prefill: orderData.prefill || {},
+            theme: { color: '#8b5e3c' },
+            modal: {
+              ondismiss: function () {
+                renderFailure('Payment window was closed before completion.');
+              }
+            },
+            handler: function (gatewayResponse) {
+              setStatus('Verifying payment...');
+              setNote('Please stay on this page.');
+
+              window.fetch(apiUrl('/api/razorpay/verify-payment'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  razorpay_order_id: gatewayResponse.razorpay_order_id,
+                  razorpay_payment_id: gatewayResponse.razorpay_payment_id,
+                  razorpay_signature: gatewayResponse.razorpay_signature
+                })
+              }).then(function (verifyResponse) {
+                return verifyResponse.json().catch(function () { return {}; }).then(function (data) {
+                  if (!verifyResponse.ok) throw new Error(data.error || 'Payment verification failed');
+                  return data;
+                });
+              }).then(function (confirmation) {
+                try {
+                  window.sessionStorage.setItem(CONFIRMATION_KEY, JSON.stringify(confirmation));
+                  window.sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+                } catch (_) {}
+                var paymentId = confirmation && confirmation.paymentId
+                  ? confirmation.paymentId
+                  : gatewayResponse.razorpay_payment_id;
+                window.location.href = 'payment-success.html?payment_id=' + encodeURIComponent(paymentId);
+              }).catch(function (err) {
+                renderFailure(err && err.message ? err.message : 'Payment verification failed.');
+              });
+            }
+          });
+
+          razorpay.on('payment.failed', function (response) {
+            var reason = response && response.error && response.error.description
+              ? response.error.description
+              : 'Payment failed. Please try again.';
+            renderFailure(reason);
+          });
+
+          razorpay.open();
+        }).catch(function (err) {
+          renderFailure(err && err.message ? err.message : 'Failed to create payment order');
+        });
+      };
+
+      if (retryBtn) {
+        retryBtn.addEventListener('click', function () {
+          startCheckout();
+        });
+      }
+
+      startCheckout();
+    })();
+  </script>
+</body>
+</html>
