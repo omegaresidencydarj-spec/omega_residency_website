@@ -79,7 +79,7 @@
     });
   });
 
-  if (page === 'home' || page === 'about') {
+  if (page === 'home') {
     var imageCache = {};
     var preloadImage = function (src) {
       if (!src) return Promise.resolve(false);

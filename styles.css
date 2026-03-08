@@ -35,7 +35,7 @@ img {
 a { color: inherit; text-decoration: none; }
 
 .container {
-  width: min(var(--max-width), calc(100% - 2rem));
+  width: min(var(--max-width), calc(100% - clamp(0.9rem, 3vw, 2rem)));
   margin: 0 auto;
 }
 
@@ -138,6 +138,11 @@ a { color: inherit; text-decoration: none; }
   border-radius: 999px;
   cursor: pointer;
   font: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 44px;
   transition: transform 0.18s ease;
 }
 
@@ -191,6 +196,7 @@ a { color: inherit; text-decoration: none; }
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
   gap: 1rem;
+  align-items: stretch;
 }
 
 .hero-card,
@@ -209,7 +215,8 @@ a { color: inherit; text-decoration: none; }
 .hero-media {
   border-radius: var(--radius);
   overflow: hidden;
-  min-height: 420px;
+  min-height: 0;
+  aspect-ratio: 4 / 3;
 }
 
 .hero-media img {
@@ -232,10 +239,15 @@ a { color: inherit; text-decoration: none; }
   font-size: 0.74rem;
   font-weight: 700;
 }
-h1, h2, h3, p { margin: 0; }
+h1, h2, h3, p, figure { margin: 0; }
 h1 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 5vw, 4rem); line-height: 1.05; margin-top: 0.5rem; }
 h2 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.7rem, 4vw, 2.7rem); line-height: 1.12; }
 .lead { color: var(--muted); font-size: 1.02rem; margin-top: 0.9rem; }
+
+body[data-page="contact"] h1,
+body[data-page="gallery"] h1 {
+  font-size: clamp(2rem, 5vw, 3.3rem);
+}
 
 .hero-actions {
   margin-top: 1rem;
@@ -245,7 +257,7 @@ h2 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.7rem, 4v
   align-items: center;
 }
 
-.section { padding: 4.2rem 0; }
+.section { padding: clamp(2.3rem, 5.4vw, 4.2rem) 0; }
 .section-head { margin-bottom: 1.5rem; }
 
 .grid-3 {
@@ -277,7 +289,8 @@ h2 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.7rem, 4v
 
 .gallery-item img {
   width: 100%;
-  height: 220px;
+  height: auto;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
   transition: opacity 0.5s ease;
   will-change: opacity;
@@ -304,9 +317,14 @@ h2 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.7rem, 4v
 
 .room-card img {
   width: 100%;
-  height: 190px;
+  height: auto;
+  aspect-ratio: 16 / 10;
   object-fit: cover;
   border-radius: 14px;
+}
+
+.room-meta h2 {
+  font-size: clamp(1.7rem, 3vw, 2rem);
 }
 
 .room-meta ul {
@@ -371,7 +389,7 @@ h2 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.7rem, 4v
 
 .booking-shell {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
   gap: 1rem;
   align-items: start;
 }
@@ -745,6 +763,19 @@ body.calendar-open {
   display: flex;
   justify-content: space-between;
   gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.summary-row > span,
+.summary-row > strong {
+  min-width: 0;
+}
+
+.summary-row > span:last-child,
+.summary-row > strong:last-child {
+  text-align: right;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .summary-row strong { font-size: 1.02rem; }
@@ -873,10 +904,13 @@ textarea { min-height: 120px; resize: vertical; }
   .hero-grid { grid-template-columns: 1fr; }
   .room-card { grid-template-columns: 1fr; }
   .room-price { text-align: left; justify-items: start; }
+  .stay-strip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 980px) {
   .booking-shell { grid-template-columns: 1fr; }
   .booking-side { position: static; top: auto; }
   .contact-layout { grid-template-columns: 1fr; }
-  .stay-strip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 1024px) {
@@ -971,20 +1005,17 @@ textarea { min-height: 120px; resize: vertical; }
 
 @media (max-width: 640px) {
   :root { --header-height: 96px; }
-  .container { width: min(var(--max-width), calc(100% - 1rem)); }
+  .container { width: min(var(--max-width), calc(100% - 0.9rem)); }
   .grid-3,
   .grid-4 { grid-template-columns: 1fr; }
   .booking-form-grid { grid-template-columns: 1fr; }
   .stay-strip-grid { grid-template-columns: 1fr; }
   .booking-form-grid .full { grid-column: span 1; }
-  .hero-media { min-height: 240px; }
-  .section { padding: 2.35rem 0; }
+  .hero-media { aspect-ratio: 16 / 11; }
   .panel, .room-card, .hero-card { border-radius: 18px; }
-  .gallery-item img { height: 200px; }
   .page { padding-top: 1rem; padding-bottom: 2.8rem; }
   .lead { font-size: 0.98rem; }
   .room-card { padding: 0.85rem; gap: 0.72rem; }
-  .room-card img { height: 220px; }
   .room-meta h2 { font-size: clamp(1.55rem, 9.3vw, 2.1rem) !important; }
   .room-price { gap: 0.5rem; }
   .room-price strong { font-size: 1.7rem; }
@@ -1001,6 +1032,11 @@ textarea { min-height: 120px; resize: vertical; }
     text-align: left;
     line-height: 1.2;
     white-space: normal;
+  }
+  .summary-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.45rem;
   }
   .addon-item {
     display: grid;
@@ -1066,7 +1102,7 @@ textarea { min-height: 120px; resize: vertical; }
   }
   .nav-actions .btn {
     padding: 0.5rem 0.68rem;
-    max-width: 112px;
+    max-width: 118px;
     font-size: 0.76rem;
     border-radius: 22px;
   }
@@ -1080,11 +1116,15 @@ textarea { min-height: 120px; resize: vertical; }
   h2 { line-height: 1.12; }
   .calendar-day,
   .calendar-empty { height: 36px; }
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
 }
 
 @media (max-width: 480px) {
-  .container { width: min(var(--max-width), calc(100% - 0.85rem)); }
+  .container { width: min(var(--max-width), calc(100% - 0.75rem)); }
   .hero-content { padding: 1rem; }
   .panel { padding: 1rem; }
-  .gallery-item img { height: 184px; }
 }
