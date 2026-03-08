@@ -34,45 +34,68 @@
   <script>
     (function () {
       var params = new URLSearchParams(window.location.search);
-      var sessionId = params.get('session_id');
+      var paymentId = params.get('payment_id');
       var lead = document.getElementById('successLead');
       var calendarBtn = document.getElementById('okCalendarBtn');
+      var cacheKey = 'omega_payment_confirmation_v1';
 
-      if (!sessionId) {
-        if (lead) lead.textContent = 'Confirmation ID missing. Please contact the hotel.';
-        if (calendarBtn) calendarBtn.style.display = 'none';
+      var renderConfirmation = function (data) {
+        var ref = document.getElementById('okRef');
+        var guest = document.getElementById('okGuest');
+        var room = document.getElementById('okRoom');
+        var plan = document.getElementById('okPlan');
+        var stay = document.getElementById('okStay');
+        var total = document.getElementById('okTotal');
+
+        if (lead) lead.textContent = 'Your booking is fully paid and confirmed.';
+        if (ref) ref.textContent = data.bookingRef || '-';
+        if (guest) guest.textContent = data.guestName || '-';
+        if (room) room.textContent = data.room || '-';
+        if (plan) plan.textContent = data.plan || '-';
+        if (stay) stay.textContent = (data.checkin || '-') + ' to ' + (data.checkout || '-');
+        if (total) total.textContent = '₹' + Number(data.totalInr || 0).toLocaleString('en-IN');
+
+        if (calendarBtn && data.calendarUrl) {
+          calendarBtn.href = data.calendarUrl;
+        } else if (calendarBtn) {
+          calendarBtn.style.display = 'none';
+        }
+      };
+
+      var cachedConfirmation = null;
+      try {
+        cachedConfirmation = JSON.parse(window.sessionStorage.getItem(cacheKey) || 'null');
+      } catch (_) {
+        cachedConfirmation = null;
+      }
+
+      if (cachedConfirmation && typeof cachedConfirmation === 'object') {
+        renderConfirmation(cachedConfirmation);
+      }
+
+      if (!paymentId) {
+        if (!cachedConfirmation) {
+          if (lead) lead.textContent = 'Confirmation ID missing. Please contact the hotel.';
+          if (calendarBtn) calendarBtn.style.display = 'none';
+        }
         return;
       }
 
-      window.fetch('/api/checkout-confirmation?session_id=' + encodeURIComponent(sessionId))
+      window.fetch('/api/razorpay/confirmation?payment_id=' + encodeURIComponent(paymentId))
         .then(function (response) {
           if (!response.ok) throw new Error('Unable to fetch confirmation');
           return response.json();
         })
         .then(function (data) {
-          var ref = document.getElementById('okRef');
-          var guest = document.getElementById('okGuest');
-          var room = document.getElementById('okRoom');
-          var plan = document.getElementById('okPlan');
-          var stay = document.getElementById('okStay');
-          var total = document.getElementById('okTotal');
-
-          if (lead) lead.textContent = 'Your booking is fully paid and confirmed.';
-          if (ref) ref.textContent = data.bookingRef || '-';
-          if (guest) guest.textContent = data.guestName || '-';
-          if (room) room.textContent = data.room || '-';
-          if (plan) plan.textContent = data.plan || '-';
-          if (stay) stay.textContent = (data.checkin || '-') + ' to ' + (data.checkout || '-');
-          if (total) total.textContent = '₹' + Number(data.totalInr || 0).toLocaleString('en-IN');
-
-          if (calendarBtn && data.calendarUrl) {
-            calendarBtn.href = data.calendarUrl;
-          } else if (calendarBtn) {
-            calendarBtn.style.display = 'none';
-          }
+          try {
+            window.sessionStorage.setItem(cacheKey, JSON.stringify(data));
+          } catch (_) {}
+          renderConfirmation(data);
         })
         .catch(function () {
+          if (cachedConfirmation) return;
           if (lead) lead.textContent = 'Payment is complete, but live confirmation details are unavailable right now.';
+          if (calendarBtn) calendarBtn.style.display = 'none';
         });
     })();
   </script>

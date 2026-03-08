@@ -788,7 +788,7 @@
     var payPlanEl = document.getElementById('payPlan');
     var payAddonsEl = document.getElementById('payAddons');
     var payTotalEl = document.getElementById('payTotal');
-    var stripeBtn = document.getElementById('stripePayBtn');
+    var payBtn = document.getElementById('payBtn') || document.getElementById('stripePayBtn');
     var waBtn = document.getElementById('paymentWhatsAppBtn');
 
     var fullName = [
@@ -846,12 +846,44 @@
       };
     };
 
-    if (stripeBtn) {
-      var defaultPayHref = stripeBtn.getAttribute('href') || '';
-      var defaultPayLabel = stripeBtn.textContent || 'Proceed to Pay';
+    if (payBtn) {
+      var defaultPayLabel = payBtn.textContent || 'Proceed to Pay';
+      var configuredPublicKey = payBtn.getAttribute('data-razorpay-key') || '';
 
-      stripeBtn.addEventListener('click', function (event) {
+      var setPayBusy = function (label) {
+        payBtn.setAttribute('aria-disabled', 'true');
+        payBtn.textContent = label;
+      };
+
+      var resetPayBtn = function () {
+        payBtn.removeAttribute('aria-disabled');
+        payBtn.textContent = defaultPayLabel;
+      };
+
+      var verifyRazorpayPayment = function (razorpayResponse) {
+        return window.fetch('/api/razorpay/verify-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            razorpay_order_id: razorpayResponse.razorpay_order_id,
+            razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+            razorpay_signature: razorpayResponse.razorpay_signature
+          })
+        }).then(function (response) {
+          return response.json().catch(function () { return {}; }).then(function (data) {
+            if (!response.ok) throw new Error(data.error || 'Payment verification failed');
+            return data;
+          });
+        });
+      };
+
+      payBtn.addEventListener('click', function (event) {
         event.preventDefault();
+
+        if (window.location.protocol === 'file:') {
+          window.alert('Payment requires the local server. Run "npm start" and open http://localhost:3000/payment.html (not file://).');
+          return;
+        }
 
         if (!state.guestDetails.email || !state.guestDetails.email.trim()) {
           window.alert('Please add guest email in Personal Details before payment.');
@@ -859,30 +891,75 @@
           return;
         }
 
-        stripeBtn.setAttribute('aria-disabled', 'true');
-        stripeBtn.textContent = 'Redirecting...';
+        if (typeof window.Razorpay !== 'function') {
+          window.alert('Razorpay Checkout failed to load. Please refresh and try again.');
+          return;
+        }
 
-        window.fetch('/api/create-checkout-session', {
+        setPayBusy('Preparing payment...');
+
+        window.fetch('/api/create-razorpay-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(paymentPayload())
         }).then(function (response) {
           return response.json().catch(function () { return {}; }).then(function (data) {
-            if (!response.ok) throw new Error(data.error || 'Failed to create checkout session');
+            if (!response.ok) throw new Error(data.error || 'Failed to create payment order');
             return data;
           });
-        }).then(function (data) {
-          if (!data || !data.url) throw new Error('Invalid checkout session response');
-          window.location.href = data.url;
-        }).catch(function (err) {
-          var hasConfiguredFallback = defaultPayHref && defaultPayHref.indexOf('your-payment-link') === -1;
-          if (hasConfiguredFallback) {
-            window.location.href = defaultPayHref;
-            return;
+        }).then(function (orderData) {
+          var checkoutKey = (orderData && orderData.keyId) || configuredPublicKey;
+          if (!orderData || !orderData.orderId || !checkoutKey) {
+            throw new Error('Invalid payment order response');
           }
-          window.alert(err && err.message ? err.message : 'Payment setup is incomplete. Please contact the hotel to complete this booking.');
-          stripeBtn.removeAttribute('aria-disabled');
-          stripeBtn.textContent = defaultPayLabel;
+
+          var razorpay = new window.Razorpay({
+            key: checkoutKey,
+            order_id: orderData.orderId,
+            amount: orderData.amount,
+            currency: orderData.currency || 'INR',
+            name: orderData.name || 'Omega Residency',
+            description: orderData.description || 'Booking Payment',
+            prefill: orderData.prefill || {},
+            theme: { color: '#8b5e3c' },
+            modal: {
+              ondismiss: function () {
+                resetPayBtn();
+              }
+            },
+            handler: function (razorpayResponse) {
+              setPayBusy('Verifying payment...');
+              verifyRazorpayPayment(razorpayResponse).then(function (confirmation) {
+                try {
+                  window.sessionStorage.setItem('omega_payment_confirmation_v1', JSON.stringify(confirmation));
+                } catch (_) {}
+                var paymentId = confirmation && confirmation.paymentId
+                  ? confirmation.paymentId
+                  : razorpayResponse.razorpay_payment_id;
+                window.location.href = 'payment-success.html?payment_id=' + encodeURIComponent(paymentId);
+              }).catch(function (err) {
+                window.alert(err && err.message ? err.message : 'Payment verification failed. Please contact the hotel.');
+                resetPayBtn();
+              });
+            }
+          });
+
+          razorpay.on('payment.failed', function (response) {
+            var reason = response && response.error && response.error.description
+              ? response.error.description
+              : 'Payment failed. Please try again.';
+            window.alert(reason);
+            resetPayBtn();
+          });
+
+          razorpay.open();
+        }).catch(function (err) {
+          var message = err && err.message ? err.message : 'Payment setup is incomplete. Please contact the hotel to complete this booking.';
+          if (message === 'Failed to fetch') {
+            message = 'Could not reach payment server. Run "npm start" and open the site from http://localhost:3000 (not file://).';
+          }
+          window.alert(message);
+          resetPayBtn();
         });
       });
     }

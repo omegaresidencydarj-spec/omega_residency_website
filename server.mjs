@@ -6,7 +6,6 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import express from 'express';
 import nodemailer from 'nodemailer';
-import Stripe from 'stripe';
 
 dotenv.config();
 
@@ -16,7 +15,8 @@ const __dirname = path.dirname(__filename);
 
 const PORT = Number(process.env.PORT || 3000);
 const APP_BASE_URL = String(process.env.APP_BASE_URL || `http://localhost:${PORT}`).replace(/\/+$/, '');
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || '';
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
 const CALENDAR_TOKEN_SECRET = process.env.CALENDAR_TOKEN_SECRET || 'replace-me-in-production';
 const EMAIL_FROM = process.env.EMAIL_FROM || '';
 const HOTEL_EMAIL = process.env.HOTEL_EMAIL || '';
@@ -24,9 +24,7 @@ const GUEST_EMAIL_LOGO_CID = 'omega-logo@omegaresidency';
 const GUEST_EMAIL_LOGO_PATH = path.join(__dirname, 'Images', 'OMEGA_LOGO-removebg.png');
 const hasGuestLogo = fs.existsSync(GUEST_EMAIL_LOGO_PATH);
 
-const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY)
-  : null;
+const razorpayReady = Boolean(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET);
 
 const smtpReady = Boolean(
   process.env.SMTP_HOST &&
@@ -47,7 +45,9 @@ const mailer = smtpReady
   })
   : null;
 
-const processedSessions = new Set();
+const verifiedPayments = new Set();
+const pendingOrders = new Map();
+const paymentConfirmations = new Map();
 
 const cleanText = (value, max = 240) => String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
 const cleanMultiline = (value, max = 500) => String(value || '').replace(/\r/g, '').trim().slice(0, max);
@@ -361,29 +361,6 @@ const sendBookingEmails = async (booking, calendarLinks) => {
   }
 };
 
-const parseBookingFromSession = (session) => {
-  const m = session.metadata || {};
-  const fallbackTotal = toPositiveInt((session.amount_total || 0) / 100, 0);
-  const payload = {
-    bookingRef: m.booking_ref || `BK-${String(session.id || '').slice(-10)}`,
-    guestName: m.guest_name || (session.customer_details && session.customer_details.name) || 'Guest',
-    guestEmail: m.guest_email || (session.customer_details && session.customer_details.email) || '',
-    guestPhone: m.guest_phone || '',
-    room: m.room || 'Room',
-    plan: m.plan || 'EP (Room only)',
-    checkin: m.checkin || '',
-    checkout: m.checkout || '',
-    guests: m.guests || 1,
-    nights: m.nights || 1,
-    baseRateInr: m.base_rate_inr || fallbackTotal,
-    addonsInr: m.addons_inr || 0,
-    totalInr: m.total_inr || fallbackTotal,
-    addonsText: m.addons_text || 'None',
-    specialRequest: m.special_request || '-'
-  };
-  return normalizeBookingPayload(payload);
-};
-
 const toConfirmationPayload = (booking, calendarLinks) => ({
   bookingRef: booking.bookingRef,
   guestName: booking.guestName,
@@ -395,48 +372,61 @@ const toConfirmationPayload = (booking, calendarLinks) => ({
   calendarUrl: calendarLinks.smartUrl
 });
 
-app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  if (!stripe || !STRIPE_WEBHOOK_SECRET) {
-    return res.status(503).send('Stripe webhook is not configured.');
-  }
-
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  const handledTypes = new Set(['checkout.session.completed', 'checkout.session.async_payment_succeeded']);
-  if (!handledTypes.has(event.type)) {
-    return res.json({ received: true });
-  }
-
-  const session = event.data.object;
-  if (!session || !session.id) return res.json({ received: true });
-  if (processedSessions.has(session.id)) return res.json({ received: true });
-
-  if (event.type === 'checkout.session.completed' && session.payment_status !== 'paid') {
-    return res.json({ received: true });
-  }
-
-  processedSessions.add(session.id);
-
-  try {
-    const booking = parseBookingFromSession(session);
-    const calendarLinks = getCalendarLinks(booking);
-    await sendBookingEmails(booking, calendarLinks);
-  } catch (err) {
-    console.error('Failed handling confirmed payment:', err);
-  }
-
-  return res.json({ received: true });
-});
-
 app.use(express.json({ limit: '1mb' }));
 
-app.post('/api/create-checkout-session', async (req, res) => {
-  if (!stripe) return res.status(503).json({ error: 'Stripe server is not configured.' });
+const safeEqual = (a, b) => {
+  const aBuf = Buffer.from(String(a || ''));
+  const bBuf = Buffer.from(String(b || ''));
+  if (aBuf.length !== bBuf.length) return false;
+  return crypto.timingSafeEqual(aBuf, bBuf);
+};
+
+const razorpayAuthHeader = () =>
+  `Basic ${Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString('base64')}`;
+
+const razorpayRequest = async (endpoint, method = 'GET', payload = null) => {
+  const response = await fetch(`https://api.razorpay.com/v1/${endpoint}`, {
+    method,
+    headers: {
+      Authorization: razorpayAuthHeader(),
+      'Content-Type': 'application/json'
+    },
+    body: payload ? JSON.stringify(payload) : undefined
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message =
+      (data && data.error && data.error.description) ||
+      (data && data.error && data.error.reason) ||
+      'Razorpay API request failed.';
+    throw new Error(message);
+  }
+  return data;
+};
+
+const storePendingOrder = (orderId, booking) => {
+  pendingOrders.set(orderId, { booking, createdAt: Date.now() });
+  if (pendingOrders.size > 500) {
+    const cutoff = Date.now() - (24 * 60 * 60 * 1000);
+    Array.from(pendingOrders.entries()).forEach(([id, entry]) => {
+      if (!entry || !entry.createdAt || entry.createdAt < cutoff) pendingOrders.delete(id);
+    });
+  }
+};
+
+const getPendingOrderBooking = (orderId) => {
+  const entry = pendingOrders.get(orderId);
+  if (!entry) return null;
+  const staleMs = 24 * 60 * 60 * 1000;
+  if ((Date.now() - entry.createdAt) > staleMs) {
+    pendingOrders.delete(orderId);
+    return null;
+  }
+  return entry.booking;
+};
+
+app.post('/api/create-razorpay-order', async (req, res) => {
+  if (!razorpayReady) return res.status(503).json({ error: 'Razorpay server is not configured.' });
 
   const booking = normalizeBookingPayload(req.body || {});
   if (!booking.guestEmail) {
@@ -446,70 +436,122 @@ app.post('/api/create-checkout-session', async (req, res) => {
     return res.status(400).json({ error: 'Invalid total amount.' });
   }
 
+  const amountInPaise = booking.totalInr * 100;
+  const receipt = cleanText(booking.bookingRef, 40).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || `BK${Date.now()}`;
+
   try {
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      customer_email: booking.guestEmail,
-      payment_method_types: ['card'],
-      billing_address_collection: 'auto',
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: 'inr',
-            unit_amount: booking.totalInr * 100,
-            product_data: {
-              name: `Omega Residency Booking · ${booking.room}`,
-              description: `${booking.plan} · ${booking.checkin} to ${booking.checkout} · ${booking.guests} guest(s)`
-            }
-          }
-        }
-      ],
-      success_url: `${APP_BASE_URL}/payment-success.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${APP_BASE_URL}/payment.html`,
-      metadata: {
-        booking_ref: cleanText(booking.bookingRef, 60),
-        guest_name: cleanText(booking.guestName, 120),
-        guest_email: cleanText(booking.guestEmail, 200),
-        guest_phone: cleanText(booking.guestPhone, 40),
-        room: cleanText(booking.room, 120),
-        plan: cleanText(booking.plan, 120),
+    const order = await razorpayRequest('orders', 'POST', {
+      amount: amountInPaise,
+      currency: 'INR',
+      receipt,
+      notes: {
+        booking_ref: cleanText(booking.bookingRef, 40),
+        room: cleanText(booking.room, 80),
+        plan: cleanText(booking.plan, 80),
         checkin: booking.checkin,
-        checkout: booking.checkout,
-        guests: String(booking.guests),
-        nights: String(booking.nights),
-        base_rate_inr: String(booking.baseRateInr),
-        addons_inr: String(booking.addonsInr),
-        total_inr: String(booking.totalInr),
-        addons_text: cleanText(booking.addonsText, 200),
-        special_request: cleanMultiline(booking.specialRequest, 450)
+        checkout: booking.checkout
       }
     });
 
-    return res.json({ url: session.url });
+    if (!order || !order.id) throw new Error('Invalid Razorpay order response.');
+    storePendingOrder(order.id, booking);
+
+    return res.json({
+      keyId: RAZORPAY_KEY_ID,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency || 'INR',
+      bookingRef: booking.bookingRef,
+      name: 'Omega Residency',
+      description: `${booking.room} · ${booking.plan}`,
+      prefill: {
+        name: booking.guestName || 'Guest',
+        email: booking.guestEmail || '',
+        contact: booking.guestPhone || ''
+      }
+    });
   } catch (err) {
-    console.error('Checkout session creation failed:', err);
-    return res.status(500).json({ error: 'Failed to create Stripe checkout session.' });
+    console.error('Razorpay order creation failed:', err);
+    return res.status(500).json({ error: err && err.message ? err.message : 'Failed to create Razorpay order.' });
   }
 });
 
-app.get('/api/checkout-confirmation', async (req, res) => {
-  if (!stripe) return res.status(503).json({ error: 'Stripe server is not configured.' });
-  const sessionId = cleanText(req.query.session_id || '', 200);
-  if (!sessionId) return res.status(400).json({ error: 'session_id is required.' });
+app.post('/api/razorpay/verify-payment', async (req, res) => {
+  if (!razorpayReady) return res.status(503).json({ error: 'Razorpay server is not configured.' });
+
+  const orderId = cleanText(req.body && req.body.razorpay_order_id, 120);
+  const paymentId = cleanText(req.body && req.body.razorpay_payment_id, 120);
+  const signature = cleanText(req.body && req.body.razorpay_signature, 160);
+
+  if (!orderId || !paymentId || !signature) {
+    return res.status(400).json({ error: 'Missing Razorpay verification fields.' });
+  }
+
+  const expectedSignature = crypto
+    .createHmac('sha256', RAZORPAY_KEY_SECRET)
+    .update(`${orderId}|${paymentId}`)
+    .digest('hex');
+
+  if (!safeEqual(signature, expectedSignature)) {
+    return res.status(400).json({ error: 'Payment signature verification failed.' });
+  }
+
+  if (paymentConfirmations.has(paymentId)) {
+    return res.json(paymentConfirmations.get(paymentId));
+  }
+
+  const booking = getPendingOrderBooking(orderId);
+  if (!booking) {
+    return res.status(400).json({ error: 'Booking draft for this order was not found. Please contact the hotel.' });
+  }
 
   try {
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-    if (!session || session.payment_status !== 'paid') {
-      return res.status(400).json({ error: 'Payment is not yet confirmed.' });
+    const payment = await razorpayRequest(`payments/${encodeURIComponent(paymentId)}`, 'GET');
+    const paymentStatus = String(payment.status || '').toLowerCase();
+    const paidStates = new Set(['authorized', 'captured']);
+
+    if (!paidStates.has(paymentStatus)) {
+      return res.status(400).json({ error: 'Payment is not yet authorized.' });
     }
-    const booking = parseBookingFromSession(session);
+    if (String(payment.order_id || '') !== orderId) {
+      return res.status(400).json({ error: 'Payment order mismatch.' });
+    }
+    if (toPositiveInt(payment.amount, 0) !== booking.totalInr * 100) {
+      return res.status(400).json({ error: 'Payment amount mismatch.' });
+    }
+
+    if (!verifiedPayments.has(paymentId)) {
+      verifiedPayments.add(paymentId);
+      const calendarLinks = getCalendarLinks(booking);
+      await sendBookingEmails(booking, calendarLinks);
+      const confirmation = {
+        ...toConfirmationPayload(booking, calendarLinks),
+        paymentId
+      };
+      paymentConfirmations.set(paymentId, confirmation);
+      pendingOrders.delete(orderId);
+      return res.json(confirmation);
+    }
+
     const calendarLinks = getCalendarLinks(booking);
-    return res.json(toConfirmationPayload(booking, calendarLinks));
+    const confirmation = {
+      ...toConfirmationPayload(booking, calendarLinks),
+      paymentId
+    };
+    paymentConfirmations.set(paymentId, confirmation);
+    return res.json(confirmation);
   } catch (err) {
-    console.error('Failed to fetch checkout confirmation:', err);
-    return res.status(500).json({ error: 'Could not load confirmation details.' });
+    console.error('Razorpay verification failed:', err);
+    return res.status(500).json({ error: err && err.message ? err.message : 'Failed to verify payment.' });
   }
+});
+
+app.get('/api/razorpay/confirmation', (req, res) => {
+  const paymentId = cleanText(req.query.payment_id || '', 120);
+  if (!paymentId) return res.status(400).json({ error: 'payment_id is required.' });
+  const confirmation = paymentConfirmations.get(paymentId);
+  if (!confirmation) return res.status(404).json({ error: 'Confirmation not found.' });
+  return res.json(confirmation);
 });
 
 app.get('/calendar/add/:token', (req, res) => {
@@ -575,7 +617,7 @@ app.use(express.static(__dirname, { extensions: ['html'] }));
 app.get('/health', (req, res) => {
   res.json({
     ok: true,
-    stripeConfigured: Boolean(stripe),
+    razorpayConfigured: razorpayReady,
     smtpConfigured: Boolean(mailer),
     appBaseUrl: APP_BASE_URL
   });
